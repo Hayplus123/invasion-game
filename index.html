@@ -210,6 +210,19 @@
     .battle-result-panel strong { font-size:14px; }
     .battle-result-panel p { margin:4px 0 0; color:var(--muted); font-size:11px; line-height:1.5; }
     .battle-result-panel .primary-btn { flex:0 0 auto; margin-left:auto; }
+
+    .barracks-capacity { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-wrap:wrap; }
+    .capacity-btn { color:var(--gold); border-color:rgba(226,189,117,.25); }
+    .unit-foot { flex-wrap:wrap; }
+    .unit-actions { grid-column:1/-1; display:flex; justify-content:flex-end; gap:7px; flex-wrap:wrap; }
+    .unit-actions button { min-width:0; }
+    .upgrade-btn { color:#f0d18c; border-color:rgba(226,189,117,.3); }
+    .unit-level { color:var(--gold); font-weight:800; }
+    .return-wrap { margin-left:auto; display:flex; align-items:flex-end; flex-direction:column; gap:5px; }
+    .return-wrap small { color:var(--gold); font-size:10px; }
+    .campaign-map { max-height:none; }
+    .placement-card { min-width:140px; }
+
     @media (max-width:700px) {
       .battle-backdrop { padding:7px; }
       .battle-toolbar { flex-direction:column; padding:14px; }
@@ -219,6 +232,7 @@
       .deployment-panel,.live-panel,.battle-result-panel { padding:12px; }
       .placement-card { min-width:calc(50% - 5px); flex:1 1 calc(50% - 5px); }
       .battle-result-panel { align-items:flex-start; flex-wrap:wrap; }
+      .battle-result-panel .return-wrap { flex:1 1 100%; margin-left:0; align-items:stretch; }
       .battle-result-panel .primary-btn { flex:1 1 100%; margin-left:0; }
       .live-panel .battle-control-buttons { margin:0; width:100%; }
       .battle-intel { grid-template-columns:1fr; }
@@ -235,6 +249,8 @@
       .campaign-map { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:8px; }
       .map-stage { min-height:102px; }
       .map-note { flex-direction:column; }
+      .barracks-capacity { justify-content:flex-start; }
+      .unit-actions button { flex:1 1 100%; }
       .panel-head { padding:17px 16px 13px; }
       .map-wrap,.mission-body { padding-left:13px; padding-right:13px; }
       .stat-pill { padding:8px 10px; }
@@ -253,7 +269,8 @@
       </div>
       <div class="top-actions">
         <div class="stat-pill"><span>✧ Supplies</span><strong id="supplyValue">25</strong></div>
-        <div class="stat-pill"><span>⌖ Territories</span><strong id="territoryValue">0 / 8</strong></div>
+        <div class="stat-pill"><span>✦ Gold</span><strong id="goldValue">80</strong></div>
+        <div class="stat-pill"><span>⌖ Territories</span><strong id="territoryValue">0 / 40</strong></div>
         <div class="stat-pill"><span>⚑ Campaign</span><strong id="progressValue">Stage 1</strong></div>
         <button class="ghost-btn" id="helpButton">How to play</button>
         <button class="ghost-btn" id="resetButton">Reset</button>
@@ -268,7 +285,7 @@
             <h2>Campaign map</h2>
             <p>Secure each frontier to open the road to the Crownlands.</p>
           </div>
-          <div class="terrain-tag">8 regions</div>
+          <div class="terrain-tag">40 regions</div>
         </div>
         <div class="map-wrap">
           <div class="map-key">
@@ -279,7 +296,7 @@
           <div class="campaign-map" id="campaignMap" aria-label="Campaign territories"></div>
           <div class="map-note">
             <span><strong>Frontier rule:</strong> Win a stage to claim its region and unlock the next one.</span>
-            <span>Lose, and a rival nation claims the region. You can regroup and try again.</span>
+            <span>Lose, and the rival claims the region and can force your front line back one territory.</span>
           </div>
         </div>
       </section>
@@ -305,14 +322,17 @@
 
             <div class="section-label"><span>Battlefield intelligence</span><span>Live encounter</span></div>
             <div class="battle-intel">
-              <div><span>Your selected army</span><strong id="playerPower">0 squads selected</strong><small>Place each squad on the battlefield before the fight begins.</small></div>
+              <div><span>Your selected army</span><strong id="playerPower">0 squads selected</strong><small>Choose your squads in the barracks, then place at least one to begin.</small></div>
               <div><span>Rival coalition</span><strong id="enemyPower">1 faction spotted</strong><small>Opposing squads move and react independently during battle.</small></div>
             </div>
 
             <div class="barracks">
               <div class="barracks-head">
-                <div><h3>Army barracks</h3><p>Choose the squads you want to send.</p></div>
-                <div class="command-count" id="commandCount">0 / 10 squads</div>
+                <div><h3>Army barracks</h3><p>Train squads with supplies; improve them and expand capacity with gold.</p></div>
+                <div class="barracks-capacity">
+                  <div class="command-count" id="commandCount">0 / 10 squads</div>
+                  <button class="small-btn capacity-btn" id="capacityUpgradeButton">Capacity +2 · 55 gold</button>
+                </div>
               </div>
               <div class="unit-list" id="unitList"></div>
               <div class="battle-actions">
@@ -348,9 +368,9 @@
       </div>
       <div class="battle-control-area">
         <div id="deploymentPanel" class="deployment-panel">
-          <div class="deployment-heading"><div><strong>Place your army</strong><small>Select a squad type below, then click your side of the field. Drag placed squads to adjust their positions.</small></div><span id="placementCount">0 / 0 placed</span></div>
+          <div class="deployment-heading"><div><strong id="deploymentTitle">Place your army</strong><small id="deploymentHint">Select a squad type below, then click your side of the field. You can start with only part of your army and deploy reserves during battle.</small></div><span id="placementCount">0 / 0 placed</span></div>
           <div class="placement-roster" id="placementRoster"></div>
-          <div class="battle-control-buttons">
+          <div class="battle-control-buttons" id="setupControls">
             <button class="small-btn" id="autoPlaceButton">Auto arrange</button>
             <button class="small-btn" id="clearBoardButton">Clear positions</button>
             <button class="primary-btn" id="startLiveBattleButton" disabled>Start battle</button>
@@ -360,12 +380,13 @@
           <div class="live-stat"><span>Your active squads</span><strong id="livePlayerCount">0</strong></div>
           <div class="live-stat"><span>Rival active squads</span><strong id="liveEnemyCount">0</strong></div>
           <div class="live-stat"><span>Battle events</span><strong id="liveEventText">Awaiting orders</strong></div>
+          <div class="live-stat"><span>Empty-field defeat timer</span><strong id="emptyFieldTimer">30.0s</strong></div>
           <div class="battle-control-buttons"><button class="small-btn" id="pauseBattleButton">Pause</button><button class="small-btn" id="battleSpeedButton">Speed: 1×</button></div>
         </div>
         <div id="battleResultPanel" class="battle-result-panel hidden">
           <div class="result-symbol" id="battleResultSymbol">✦</div>
           <div><strong id="battleResultTitle">Battle complete</strong><p id="battleResultText"></p></div>
-          <button class="primary-btn" id="returnCampaignButton">Return to campaign</button>
+          <div class="return-wrap"><small id="returnCountdown">Returning to camp in 10 seconds…</small><button class="primary-btn" id="returnCampaignButton">Return now</button></div>
         </div>
       </div>
     </section>
@@ -388,7 +409,9 @@
     'use strict';
 
     const SAVE_KEY = 'frontierCommandSave_v1';
-    const COMMAND_LIMIT = 10;
+    const BASE_COMMAND_LIMIT = 10;
+    const MAX_COMMAND_LIMIT = 30;
+    const MAX_UNIT_UPGRADE = 5;
 
     const nations = {
       ashen:   { name: 'Ashen Pact',      symbol: '◆', color: '#d8876d', note: 'A determined border alliance' },
@@ -399,76 +422,79 @@
     };
 
     const units = [
-      { id:'recruit', name:'Foot Guard', icon:'🛡️', role:'Reliable frontline squad', cost:4, unlockAt:1, detail:'A steady all-rounder. Available from the start.' },
-      { id:'ranger', name:'Ranger Squad', icon:'🏹', role:'Fast and adaptable', cost:6, unlockAt:2, detail:'Adds a small scouting bonus to your force.' },
-      { id:'guardian', name:'Guardian', icon:'🛡', role:'Hardy defensive specialists', cost:7, unlockAt:3, detail:'Adds extra protection to your deployed army.' },
-      { id:'medic', name:'Field Medic', icon:'✚', role:'Keeps squads in the fight', cost:8, unlockAt:4, detail:'Improves the chance that deployed squads return safely.' },
-      { id:'rider', name:'Swift Riders', icon:'🐎', role:'Powerful mobile squads', cost:10, unlockAt:5, detail:'A strong burst of power for your army.' },
-      { id:'engineer', name:'Pathfinders', icon:'⚙️', role:'Experts at difficult terrain', cost:11, unlockAt:6, detail:'Improves your force in fortified regions.' },
-      { id:'skyship', name:'Skyship Crew', icon:'☁️', role:'Elite aerial support', cost:14, unlockAt:7, detail:'A high-power specialist squad.' },
-      { id:'titan', name:'Stone Titan', icon:'🗿', role:'Legendary heavy squad', cost:19, unlockAt:8, detail:'The strongest unit in the campaign.' }
+      { id:'recruit', name:'Foot Guard', icon:'🛡️', role:'Reliable frontline infantry', cost:4, unlockAt:1, detail:'A steady all-rounder. Available from the start.' },
+      { id:'ranger', name:'Ranger Squad', icon:'🏹', role:'Hooded long-range bow specialists', cost:6, unlockAt:5, detail:'Long-range attackers with distinctive bows and cloaks.' },
+      { id:'guardian', name:'Guardian', icon:'🛡️', role:'Armoured shield defenders', cost:7, unlockAt:10, detail:'Heavily armoured defenders with large shields.' },
+      { id:'medic', name:'Field Medic', icon:'✚', role:'Support units who heal allies', cost:8, unlockAt:15, detail:'White-and-teal support units carrying a healing staff.' },
+      { id:'rider', name:'Swift Riders', icon:'🐎', role:'Mounted cavalry with galloping horses', cost:10, unlockAt:20, detail:'Mounted units on four-legged horses with animated galloping and charge attacks.' },
+      { id:'engineer', name:'Pathfinders', icon:'⚒️', role:'Hard-hat builders with tools', cost:11, unlockAt:25, detail:'Tool-carrying engineers with packs and work helmets.' },
+      { id:'skyship', name:'Skyship Crew', icon:'🪽', role:'Airborne glider specialists', cost:14, unlockAt:30, detail:'Aerial specialists with a clear flying silhouette.' },
+      { id:'titan', name:'Stone Titan', icon:'🗿', role:'Massive stone guardian', cost:19, unlockAt:35, detail:'A towering stone giant with a heavy stone maul.' }
     ];
 
-    const stages = [
-      {
-        name:'Greenfield Crossing', terrain:'Open country', enemyLabel:'Border skirmish',
-        description:'A wide farming region sits between your homeland and the Crownlands. The Ashen Pact has moved into the crossing. Secure it to establish your first forward territory.',
-        defenders:[{nation:'ashen',squads:4}], reward:22, unlock:'ranger', supplyBonus:2,
-        claimText:'Ashen Pact patrols have taken control of the crossing.'
-      },
-      {
-        name:'Copper Ridge', terrain:'Rocky highlands', enemyLabel:'Two-nation coalition',
-        description:'The ridge is rich in ore and strategically important. The Ashen Pact has called on the Frost Union, so two rival nations will defend this region together.',
-        defenders:[{nation:'ashen',squads:2},{nation:'frost',squads:3}], reward:27, unlock:'guardian', supplyBonus:2,
-        claimText:'The Frost Union and Ashen Pact have divided the ridge between their patrols.'
-      },
-      {
-        name:'Frostfall Pass', terrain:'Snowy pass', enemyLabel:'Mountain defence',
-        description:'A narrow mountain route leads deeper into the continent. The Frost Union has gathered its strongest local defenders here.',
-        defenders:[{nation:'frost',squads:6}], reward:31, unlock:'medic', supplyBonus:2,
-        claimText:'The Frost Union has closed the pass and claimed the surrounding heights.'
-      },
-      {
-        name:'Sunspire Coast', terrain:'Coastal cliffs', enemyLabel:'Joint defence',
-        description:'The coast is the gateway to the southern trade routes. The Solar Republic has joined forces with the Frost Union to stop your advance.',
-        defenders:[{nation:'solar',squads:3},{nation:'frost',squads:4}], reward:37, unlock:'rider', supplyBonus:3,
-        claimText:'The Solar Republic has secured the coast with support from the Frost Union.'
-      },
-      {
-        name:'Ironvale', terrain:'Fortified valley', enemyLabel:'Fortified coalition',
-        description:'The Iron Crown controls the old valley roads. The Ashen Pact has sent reinforcements, making this one of the toughest stages so far.',
-        defenders:[{nation:'iron',squads:5},{nation:'ashen',squads:4}], reward:43, unlock:'engineer', supplyBonus:3,
-        claimText:'The Iron Crown has taken the valley and its surrounding settlements.'
-      },
-      {
-        name:'Verdant Reach', terrain:'Forest frontier', enemyLabel:'Forest alliance',
-        description:'A vast green region stands between your army and the northern sky routes. The Verdant League and Solar Republic are defending it together.',
-        defenders:[{nation:'verdant',squads:6},{nation:'solar',squads:5}], reward:49, unlock:'skyship', supplyBonus:3,
-        claimText:'The Verdant League now controls the forest frontier.'
-      },
-      {
-        name:'Skyhold', terrain:'High plateau', enemyLabel:'Three-nation alliance',
-        description:'Three rival powers have formed a temporary alliance to stop you. Their combined force guards the final approach to Crownfall.',
-        defenders:[{nation:'frost',squads:4},{nation:'iron',squads:4},{nation:'ashen',squads:4}], reward:57, unlock:'titan', supplyBonus:4,
-        claimText:'The Iron Crown has claimed the plateau for the three-nation alliance.'
-      },
-      {
-        name:'Crownfall', terrain:'Royal heartland', enemyLabel:'Grand coalition',
-        description:'The final stronghold is defended by every rival nation. Break the grand coalition and the Crownlands will be united under your banner.',
-        defenders:[{nation:'ashen',squads:3},{nation:'frost',squads:3},{nation:'iron',squads:3},{nation:'solar',squads:3},{nation:'verdant',squads:3}], reward:100, unlock:null, supplyBonus:0,
-        claimText:'The grand coalition has held Crownfall and claimed the heartland.'
-      }
+    const stageNames = [
+      'Greenfield Crossing','Copper Ridge','Frostfall Pass','Sunspire Coast','Ironvale','Verdant Reach','Skyhold','Crownfall Outskirts',
+      'Emberwatch','Silverpine','Moonstone Ford','Ashen Barrens','Stormbreak','Deepwood Hold','Glasswater Bay','Highwinter Gate',
+      'Thornmarch','Blackrock Citadel','Dawnfield','Kingsroad','Redcliff Basin','Mistfen','Gilded Coast','Wolfpine',
+      'Starfall Plateau','Emberlake','Ironroot','Frostspire','Sunken Gate','Obsidian Reach','Cloudrest','Verdant Crown',
+      'Cinder Pass','Shattered Vale','High King’s Road','Crownward','Amber Keep','Lastwatch','The Outer Crown','Crownfall'
     ];
+    const stageTerrains = [
+      { terrain:'Open country', label:'Border skirmish', description:'Rolling grassland and open fields leave little cover, so formations and timing matter.' },
+      { terrain:'Rocky highlands', label:'Highland coalition', description:'Uneven ridges and narrow paths split the battlefield into smaller approaches.' },
+      { terrain:'Snowy pass', label:'Mountain defence', description:'A cold mountain route is guarded by a stubborn northern coalition.' },
+      { terrain:'Coastal cliffs', label:'Coastal alliance', description:'The coast is a gateway to trade routes, defended by rival nations working together.' },
+      { terrain:'Fortified valley', label:'Fortified coalition', description:'Old roads and stone outposts make this valley a difficult region to secure.' },
+      { terrain:'Forest frontier', label:'Forest alliance', description:'Dense woodland surrounds the approach and hides the enemy coalition.' },
+      { terrain:'High plateau', label:'Three-nation alliance', description:'Several rival powers have joined forces to guard the high ground.' },
+      { terrain:'Royal heartland', label:'Grand coalition', description:'The strongest coalition yet guards the road toward the Crownlands.' }
+    ];
+    const defencePatterns = [
+      [{nation:'ashen',squads:4}],
+      [{nation:'ashen',squads:2},{nation:'frost',squads:3}],
+      [{nation:'frost',squads:6}],
+      [{nation:'solar',squads:3},{nation:'frost',squads:4}],
+      [{nation:'iron',squads:5},{nation:'ashen',squads:4}],
+      [{nation:'verdant',squads:6},{nation:'solar',squads:5}],
+      [{nation:'frost',squads:4},{nation:'iron',squads:4},{nation:'ashen',squads:4}],
+      [{nation:'ashen',squads:3},{nation:'frost',squads:3},{nation:'iron',squads:3},{nation:'solar',squads:3},{nation:'verdant',squads:3}]
+    ];
+    const stages = stageNames.map((name, index) => {
+      const level = index + 1;
+      const pattern = defencePatterns[index % defencePatterns.length];
+      const reinforcementScale = Math.floor((level - 1) / 12);
+      const defenders = pattern.map(defender => ({
+        nation: defender.nation,
+        squads: defender.squads + reinforcementScale
+      }));
+      const strongest = [...defenders].sort((a,b) => b.squads - a.squads)[0];
+      return {
+        name,
+        terrain: stageTerrains[index % stageTerrains.length].terrain,
+        enemyLabel: stageTerrains[index % stageTerrains.length].label,
+        description: `${stageTerrains[index % stageTerrains.length].description} This is campaign level ${level} of ${stageNames.length}. Rival forces become more numerous as the frontier advances.`,
+        defenders,
+        reward: 18 + level * 2,
+        goldReward: 24 + level * 4,
+        supplyBonus: 0,
+        claimText: `${nations[strongest.nation].name} has claimed ${name}.`
+      };
+    });
 
     function freshState() {
       return {
+        progressionVersion:2,
         supplies:25,
+        gold:100,
         inventory:{recruit:8,ranger:0,guardian:0,medic:0,rider:0,engineer:0,skyship:0,titan:0},
         unlocked:['recruit'],
+        upgrades:{recruit:0,ranger:0,guardian:0,medic:0,rider:0,engineer:0,skyship:0,titan:0},
         deployed:{recruit:0,ranger:0,guardian:0,medic:0,rider:0,engineer:0,skyship:0,titan:0},
+        commandLimit:BASE_COMMAND_LIMIT,
         owners:Array(stages.length).fill('contested'),
         completed:[],
         currentStage:0,
+        highestLevelCleared:0,
         report:null,
         campaignWon:false
       };
@@ -482,19 +508,34 @@
         const base = freshState();
         if (!saved || typeof saved !== 'object') return base;
         base.supplies = Number.isFinite(saved.supplies) ? Math.max(0, saved.supplies) : base.supplies;
+        base.gold = Number.isFinite(saved.gold) ? Math.max(0, saved.gold) : base.gold;
         base.inventory = {...base.inventory, ...(saved.inventory || {})};
-        base.unlocked = Array.isArray(saved.unlocked) ? saved.unlocked.filter(id => units.some(u => u.id === id)) : base.unlocked;
         base.deployed = {...base.deployed, ...(saved.deployed || {})};
-        base.owners = Array.isArray(saved.owners) && saved.owners.length === stages.length ? saved.owners : base.owners;
+        base.upgrades = {...base.upgrades, ...(saved.upgrades || {})};
+        base.commandLimit = Math.max(BASE_COMMAND_LIMIT, Math.min(MAX_COMMAND_LIMIT,
+          BASE_COMMAND_LIMIT + Math.floor((Number(saved.commandLimit) - BASE_COMMAND_LIMIT) / 2) * 2 || BASE_COMMAND_LIMIT));
         base.completed = Array.isArray(saved.completed) ? saved.completed.filter(n => Number.isInteger(n) && n >= 0 && n < stages.length) : [];
         base.currentStage = Math.min(stages.length - 1, Math.max(0, Number(saved.currentStage) || 0));
+        base.highestLevelCleared = Math.max(0, Number(saved.highestLevelCleared) || 0,
+          ...base.completed.map(n => n + 1));
+        if (Array.isArray(saved.owners)) {
+          saved.owners.slice(0, stages.length).forEach((owner, index) => {
+            if (owner === 'contested' || owner === 'player' || nations[owner]) base.owners[index] = owner;
+          });
+        }
         base.report = saved.report && typeof saved.report === 'object' ? saved.report : null;
-        base.campaignWon = Boolean(saved.campaignWon);
+        base.campaignWon = Number(saved.progressionVersion) >= 2 && Boolean(saved.campaignWon);
+        const isNewProgression = Number(saved.progressionVersion) >= 2;
+        const previouslyUnlocked = Array.isArray(saved.unlocked) ? saved.unlocked : [];
+        base.unlocked = units.filter(unit => unit.unlockAt === 1 || unit.unlockAt <= base.highestLevelCleared ||
+          (isNewProgression && previouslyUnlocked.includes(unit.id))).map(unit => unit.id);
         for (const unit of units) {
           base.inventory[unit.id] = Math.max(0, Number(base.inventory[unit.id]) || 0);
           base.deployed[unit.id] = Math.max(0, Math.min(base.inventory[unit.id], Number(base.deployed[unit.id]) || 0));
+          base.upgrades[unit.id] = Math.max(0, Math.min(MAX_UNIT_UPGRADE, Math.floor(Number(base.upgrades[unit.id]) || 0)));
         }
         if (!base.unlocked.includes('recruit')) base.unlocked.unshift('recruit');
+        base.progressionVersion = 2;
         return base;
       } catch (error) {
         console.warn('Could not load saved campaign:', error);
@@ -531,6 +572,7 @@
 
     function renderHeader() {
       $('supplyValue').textContent = state.supplies;
+      $('goldValue').textContent = state.gold;
       $('territoryValue').textContent = `${state.completed.length} / ${stages.length}`;
       $('progressValue').textContent = state.campaignWon ? 'Complete' : `Stage ${currentStageIndex() + 1}`;
     }
@@ -588,7 +630,10 @@
       });
       $('playerPower').textContent = `${selectedCount()} squads selected`;
       $('enemyPower').textContent = `${enemyFactions} ${enemyFactions === 1 ? 'faction' : 'factions'} spotted`;
-      $('commandCount').textContent = `${selectedCount()} / ${COMMAND_LIMIT} squads`;
+      $('commandCount').textContent = `${selectedCount()} / ${state.commandLimit} squads`;
+      const capCost = capacityUpgradeCost();
+      $('capacityUpgradeButton').textContent = state.commandLimit >= MAX_COMMAND_LIMIT ? 'Capacity maxed' : `Capacity +2 · ${capCost} gold`;
+      $('capacityUpgradeButton').disabled = state.commandLimit >= MAX_COMMAND_LIMIT || state.gold < capCost;
       $('battleButton').disabled = state.campaignWon || selectedCount() === 0;
       $('battleButton').textContent = state.campaignWon ? 'Campaign complete' : state.owners[index] === 'contested' ? 'Arrange army' : 'Retake region';
       renderReport();
@@ -601,12 +646,12 @@
         const unlocked = state.unlocked.includes(unit.id);
         const owned = state.inventory[unit.id] || 0;
         const deployed = state.deployed[unit.id] || 0;
-        const room = selectedCount() < COMMAND_LIMIT;
+        const room = selectedCount() < state.commandLimit;
         const row = document.createElement('div');
         row.className = 'unit-row' + (unlocked ? '' : ' locked');
         if (!unlocked) {
           row.innerHTML = `
-            <div class="unit-main"><div class="unit-icon">🔒</div><div class="unit-info"><strong>${unit.name}</strong><span>Unlock after stage ${unit.unlockAt - 1} victory</span></div></div>
+            <div class="unit-main"><div class="unit-icon">🔒</div><div class="unit-info"><strong>${unit.name}</strong><span>Clear level ${unit.unlockAt} to unlock</span></div></div>
             <div class="unit-controls"><span class="unit-count">—</span></div>
           `;
         } else {
@@ -617,8 +662,11 @@
               <span class="unit-count">${deployed}</span>
               <button class="deploy-btn" data-action="plus" aria-label="Add one ${unit.name}" ${deployed >= owned || !room ? 'disabled' : ''}>+</button>
             </div>
-            <div class="unit-foot"><span>Available: <strong>${owned}</strong></span><span>Train one: ${unit.cost} supplies</span></div>
-            <button class="small-btn train-btn" data-action="train" ${state.supplies < unit.cost ? 'disabled' : ''}>Train +1 · ${unit.cost} ✧</button>
+            <div class="unit-foot"><span>Available: <strong>${owned}</strong></span><span>Upgrade: <strong class="unit-level">Lv. ${state.upgrades[unit.id] || 0}/${MAX_UNIT_UPGRADE}</strong></span><span>Train: ${unit.cost} supplies</span></div>
+            <div class="unit-actions">
+              <button class="small-btn train-btn" data-action="train" ${state.supplies < unit.cost ? 'disabled' : ''}>Train +1 · ${unit.cost} ✧</button>
+              <button class="small-btn upgrade-btn" data-action="upgrade" ${state.gold < unitUpgradeCost(unit.id) || (state.upgrades[unit.id] || 0) >= MAX_UNIT_UPGRADE ? 'disabled' : ''}>${(state.upgrades[unit.id] || 0) >= MAX_UNIT_UPGRADE ? 'Max upgrade' : `Upgrade · ${unitUpgradeCost(unit.id)} gold`}</button>
+            </div>
           `;
           row.querySelectorAll('[data-action]').forEach(button => {
             button.addEventListener('click', () => {
@@ -626,6 +674,7 @@
               if (action === 'plus') changeDeployment(unit.id, 1);
               if (action === 'minus') changeDeployment(unit.id, -1);
               if (action === 'train') trainUnit(unit.id);
+              if (action === 'upgrade') upgradeUnit(unit.id);
             });
           });
         }
@@ -659,8 +708,8 @@
       const current = state.deployed[unitId] || 0;
       const next = current + amount;
       if (next < 0 || next > (state.inventory[unitId] || 0)) return;
-      if (amount > 0 && selectedCount() >= COMMAND_LIMIT) {
-        showToast(`Your command limit is ${COMMAND_LIMIT} squads.`);
+      if (amount > 0 && selectedCount() >= state.commandLimit) {
+        showToast(`Your squad capacity is ${state.commandLimit}. Upgrade capacity to send more.`);
         return;
       }
       state.deployed[unitId] = next;
@@ -677,6 +726,37 @@
       showToast(`${unit.name} trained and ready.`);
     }
 
+    function unitUpgradeCost(unitId) {
+      const level = state.upgrades[unitId] || 0;
+      return 35 + level * 25;
+    }
+
+    function capacityUpgradeCost() {
+      return 55 + Math.max(0,(state.commandLimit - BASE_COMMAND_LIMIT) / 2) * 28;
+    }
+
+    function upgradeUnit(unitId) {
+      if (!state.unlocked.includes(unitId)) return;
+      const level = state.upgrades[unitId] || 0;
+      if (level >= MAX_UNIT_UPGRADE) { showToast('This unit type is already fully upgraded.'); return; }
+      const cost = unitUpgradeCost(unitId);
+      if (state.gold < cost) { showToast('Not enough gold for this unit upgrade.'); return; }
+      state.gold -= cost;
+      state.upgrades[unitId] = level + 1;
+      renderAll();
+      showToast(`${units.find(unit => unit.id === unitId).name} upgraded to level ${level + 1}.`);
+    }
+
+    function upgradeSquadCapacity() {
+      if (state.commandLimit >= MAX_COMMAND_LIMIT) return;
+      const cost = capacityUpgradeCost();
+      if (state.gold < cost) { showToast('Not enough gold to expand squad capacity.'); return; }
+      state.gold -= cost;
+      state.commandLimit = Math.min(MAX_COMMAND_LIMIT,state.commandLimit + 2);
+      renderAll();
+      showToast(`Squad capacity increased to ${state.commandLimit}.`);
+    }
+
     // The battle is a live simulation. There is no pre-battle power roll:
     // each squad moves, chooses nearby targets, attacks, supports allies, and can be routed.
     const FIELD = { width:1000, height:560 };
@@ -685,7 +765,7 @@
       ranger:   { hp:78,  damage:13, speed:43, range:158,cooldown:1.18, radius:13, style:'ranged' },
       guardian: { hp:184, damage:13, speed:34, range:31, cooldown:1.08, radius:17, style:'melee' },
       medic:    { hp:91,  damage:6,  speed:39, range:116,cooldown:1.12, radius:13, style:'support' },
-      rider:    { hp:102, damage:18, speed:76, range:33, cooldown:.86, radius:15, style:'melee' },
+      rider:    { hp:132, damage:23, speed:96, range:36, cooldown:1.02, radius:18, style:'melee' },
       engineer: { hp:108, damage:11, speed:44, range:128,cooldown:1.42, radius:14, style:'ranged' },
       skyship:  { hp:108, damage:20, speed:47, range:184,cooldown:1.34, radius:15, style:'ranged', flying:true },
       titan:    { hp:315, damage:30, speed:25, range:40, cooldown:1.48, radius:23, style:'melee', splash:true }
@@ -695,10 +775,20 @@
     let battle = null;
     let battleAnimation = 0;
     let battleLastFrame = 0;
+    let autoReturnTimeout = null;
+    let returnCountdownInterval = null;
+
+    function getPlayerUnitStats(type) {
+      const base = friendlyStats[type];
+      const level = state.upgrades[type] || 0;
+      const statScale = 1 + level * .09;
+      return {...base, hp:Math.round(base.hp * statScale), damage:Math.round(base.damage * statScale),
+        speed:base.speed * (1 + level * .025), cooldown:base.cooldown * (1 - level * .012)};
+    }
 
     function makeBattleUnit(team, type, x, y, extra = {}) {
       const stageIndex = battle ? battle.stageIndex : currentStageIndex();
-      const base = team === 'player' ? friendlyStats[type] : extra.stats;
+      const base = team === 'player' ? getPlayerUnitStats(type) : extra.stats;
       const hp = base.hp;
       return {
         id: `unit-${Math.random().toString(36).slice(2,10)}`,
@@ -709,7 +799,7 @@
         flying:Boolean(base.flying), splash:Boolean(base.splash),
         color: team === 'player' ? '#73cbb5' : (extra.color || '#d8876d'),
         nation:extra.nation || null, alive:true, fade:1, facing:team === 'player' ? 1 : -1,
-        targetId:null, flash:0, healPulse:0, bob:Math.random()*6
+        targetId:null, flash:0, healPulse:0, bob:Math.random()*6, chargeReady:false
       };
     }
 
@@ -721,18 +811,24 @@
         phase:'setup', stageIndex, snapshot, remaining:{...snapshot},
         units:[], enemies:[], projectiles:[], particles:[], selectedType:null,
         dragging:null, paused:false, speed:1, elapsed:0, lastEvent:'Squads are ready',
-        selectedUnit:null, result:null
+        selectedUnit:null, result:null, emptyFieldTime:0
       };
       const first = units.find(unit => (battle.remaining[unit.id] || 0) > 0);
       battle.selectedType = first ? first.id : null;
       $('battleBackdrop').classList.add('show');
       $('battleBackdrop').setAttribute('aria-hidden','false');
       $('battleStageTitle').textContent = stages[stageIndex].name;
-      $('battleHint').textContent = 'Choose a squad, then click the LEFT side of the field to place it. Drag placed squads to adjust your formation.';
+      $('battleHint').textContent = 'Choose a squad, then click the LEFT side of the field. You can start with only part of your army and send reserves during combat.';
       $('battleStatus').textContent = 'Deployment';
       $('pauseBattleButton').textContent = 'Pause';
       $('battleSpeedButton').textContent = 'Speed: 1×';
       $('deploymentPanel').classList.remove('hidden');
+      $('deploymentTitle').textContent = 'Place your army';
+      $('deploymentHint').textContent = 'Select a squad type below, then click your side of the field. You do not need to place everyone before starting; spare squads can join during battle.';
+      $('setupControls').classList.remove('hidden');
+      $('autoPlaceButton').classList.remove('hidden');
+      $('clearBoardButton').classList.remove('hidden');
+      $('startLiveBattleButton').classList.remove('hidden');
       $('livePanel').classList.add('hidden');
       $('battleResultPanel').classList.add('hidden');
       renderPlacementRoster();
@@ -747,13 +843,15 @@
       }
       if (battleAnimation) cancelAnimationFrame(battleAnimation);
       battleAnimation = 0;
+      clearTimeout(autoReturnTimeout); autoReturnTimeout = null;
+      clearInterval(returnCountdownInterval); returnCountdownInterval = null;
       battle = null;
       $('battleBackdrop').classList.remove('show');
       $('battleBackdrop').setAttribute('aria-hidden','true');
     }
 
     function renderPlacementRoster() {
-      if (!battle || battle.phase !== 'setup') return;
+      if (!battle || !['setup','running'].includes(battle.phase)) return;
       const roster = $('placementRoster');
       roster.innerHTML = '';
       units.filter(unit => (battle.snapshot[unit.id] || 0) > 0).forEach(unit => {
@@ -773,10 +871,12 @@
       });
       const total = sum(units.map(unit => battle.snapshot[unit.id] || 0));
       const placed = battle.units.length;
-      $('placementCount').textContent = `${placed} / ${total} placed`;
-      $('startLiveBattleButton').disabled = placed !== total || total === 0;
-      $('startLiveBattleButton').textContent = placed === total ? 'Start battle' : `Place ${total - placed} more`;
-      $('battleStatus').textContent = `Deployment · ${placed}/${total}`;
+      $('placementCount').textContent = battle.phase === 'running'
+        ? `${sum(units.map(unit => battle.remaining[unit.id] || 0))} reserves ready`
+        : `${placed} / ${total} placed · ${sum(units.map(unit => battle.remaining[unit.id] || 0))} in reserve`;
+      $('startLiveBattleButton').disabled = placed === 0 || total === 0;
+      $('startLiveBattleButton').textContent = placed > 0 ? 'Start battle' : 'Place at least 1 squad';
+      if (battle.phase === 'setup') $('battleStatus').textContent = `Deployment · ${placed}/${total}`;
     }
 
     function fieldPoint(event) {
@@ -786,38 +886,44 @@
     }
 
     function placeSquad(type, x, y) {
-      if (!battle || battle.phase !== 'setup' || !type || (battle.remaining[type] || 0) <= 0) return;
+      if (!battle || !['setup','running'].includes(battle.phase) || !type || (battle.remaining[type] || 0) <= 0) {
+        if (battle && battle.phase === 'running' && !type) showToast('Select a reserve squad below first.');
+        return;
+      }
       const unit = units.find(item => item.id === type);
       if (!unit) return;
       const px = Math.max(40, Math.min(452, x));
       const py = Math.max(42, Math.min(518, y));
-      const near = battle.units.some(other => Math.hypot(other.x-px, other.y-py) < 34);
+      const near = battle.units.some(other => other.alive && Math.hypot(other.x-px,other.y-py) < 30);
       if (near) { showToast('Leave a little space between squads.'); return; }
-      battle.units.push(makeBattleUnit('player', type, px, py));
+      const reinforcement = battle.phase === 'running';
+      const newUnit = makeBattleUnit('player', type, px, py);
+      if (reinforcement) newUnit.attackTimer = .12;
+      battle.units.push(newUnit);
       battle.remaining[type]--;
-      if (battle.remaining[type] <= 0) {
-        const next = units.find(item => (battle.remaining[item.id] || 0) > 0);
-        battle.selectedType = next ? next.id : null;
+      battle.selectedType = battle.remaining[type] > 0 ? type : (units.find(item => (battle.remaining[item.id] || 0) > 0)?.id || null);
+      if (reinforcement) {
+        battle.emptyFieldTime = 0;
+        battle.lastEvent = `${unit.name} reinforcement deployed`;
+        updateLiveStats();
       }
       renderPlacementRoster();
       drawBattleField();
+      if (reinforcement) showToast(`${unit.name} reinforcement joined the battle.`);
     }
 
     function autoPlaceArmy() {
       if (!battle || battle.phase !== 'setup') return;
       battle.units = [];
-      const formation = [
-        {x:115,y:130},{x:215,y:130},{x:315,y:130},
-        {x:115,y:240},{x:215,y:240},{x:315,y:240},
-        {x:115,y:350},{x:215,y:350},{x:315,y:350},
-        {x:115,y:460},{x:215,y:460},{x:315,y:460}
-      ];
       let slot = 0;
       units.forEach(unit => {
         const count = battle.snapshot[unit.id] || 0;
         for (let i=0;i<count;i++) {
-          const pos = formation[slot++] || {x:90 + (slot%3)*105,y:75 + (slot%7)*62};
+          const col = slot % 4;
+          const row = Math.floor(slot / 4);
+          const pos = {x:75 + col*105, y:62 + row*61};
           battle.units.push(makeBattleUnit('player', unit.id, pos.x, pos.y));
+          slot++;
         }
       });
       battle.remaining = Object.fromEntries(units.map(unit => [unit.id,0]));
@@ -846,30 +952,30 @@
         const nation = nations[defender.nation];
         for (let i=0;i<factionCount;i++,created++) {
           const kind = (i + factionIndex) % 5;
-          const scale = 1 + battle.stageIndex * .065;
+          const scale = 1 + battle.stageIndex * .025;
           let stats;
           if (kind === 1) stats = {hp:84*scale,damage:11*scale,speed:39,range:137,cooldown:1.35,style:'ranged',radius:13};
           else if (kind === 3) stats = {hp:132*scale,damage:12*scale,speed:30,range:31,cooldown:1.18,style:'melee',radius:17};
           else stats = {hp:99*scale,damage:12*scale,speed:38,range:30,cooldown:1.12,style:'melee',radius:15};
-          const col = created % 4;
-          const row = Math.floor(created / 4);
-          const x = 625 + col*86 + (row%2)*26;
-          const y = 92 + row*82 + (factionIndex%2)*12;
+          const col = created % 5;
+          const row = Math.floor(created / 5);
+          const x = 590 + col*76 + (row%2)*16;
+          const y = 80 + row*78 + (factionIndex%2)*11;
           battle.enemies.push(makeBattleUnit('enemy','enemy',x,y,{stats,color:nation.color,nation:defender.nation}));
         }
       });
       while (battle.enemies.length < targetCount) {
         const nationKey = stage.defenders[0].nation;
         const nation = nations[nationKey];
-        const scale = 1 + battle.stageIndex * .065;
-        battle.enemies.push(makeBattleUnit('enemy','enemy',690+(battle.enemies.length%3)*80,110+Math.floor(battle.enemies.length/3)*90,{stats:{hp:100*scale,damage:12*scale,speed:38,range:30,cooldown:1.1,style:'melee',radius:15},color:nation.color,nation:nationKey}));
+        const scale = 1 + battle.stageIndex * .025;
+        battle.enemies.push(makeBattleUnit('enemy','enemy',610+(battle.enemies.length%5)*70,85+Math.floor(battle.enemies.length/5)*75,{stats:{hp:100*scale,damage:12*scale,speed:38,range:30,cooldown:1.1,style:'melee',radius:15},color:nation.color,nation:nationKey}));
       }
     }
 
     function startLiveBattle() {
       if (!battle || battle.phase !== 'setup') return;
       const total = sum(units.map(unit => battle.snapshot[unit.id] || 0));
-      if (battle.units.length !== total || total === 0) { showToast('Place every squad before starting.'); return; }
+      if (battle.units.length < 1 || total === 0) { showToast('Place at least one squad before starting. Keep the rest in reserve.'); return; }
       battle.phase = 'running';
       battle.paused = false;
       battle.elapsed = 0;
@@ -877,10 +983,14 @@
       battle.particles = [];
       battle.units.forEach(unit => { unit.attackTimer = .35 + Math.random()*.7; unit.alive = true; });
       createEnemyArmy();
-      $('deploymentPanel').classList.add('hidden');
+      $('deploymentPanel').classList.remove('hidden');
+      $('deploymentTitle').textContent = 'Send reinforcements';
+      $('deploymentHint').textContent = 'The battle is live. Select any available reserve squad, then click an open spot on the LEFT side of the battlefield to send it in.';
+      $('setupControls').classList.add('hidden');
       $('livePanel').classList.remove('hidden');
+      renderPlacementRoster();
       $('battleResultPanel').classList.add('hidden');
-      $('battleHint').textContent = 'The battle is underway. Squads choose nearby opponents, move into range, and support one another automatically.';
+      $('battleHint').textContent = 'The battle is underway. Squads act automatically; choose a spare squad below and click your side of the field to reinforce at any moment.';
       $('battleStatus').textContent = 'Battle in progress';
       $('battleCloseButton').disabled = true;
       $('battleCanvas').style.cursor = 'default';
@@ -990,6 +1100,7 @@
       const distance = Math.hypot(target.x-unit.x,target.y-unit.y);
       const reach = unit.range + unit.radius + target.radius;
       if (distance > reach) {
+        if (unit.type === 'rider' && distance > 88) unit.chargeReady = true;
         moveUnit(unit,target,dt,allies);
         return;
       }
@@ -999,7 +1110,10 @@
         if (unit.style === 'ranged') {
           battle.projectiles.push({x:unit.x,y:unit.y,targetId:target.id,team:unit.team,color:unit.color,damage:unit.damage,splash:unit.splash,speed:unit.flying?410:350,size:unit.flying?5:4});
         } else {
-          damageUnit(target,unit.damage,unit.color,unit.splash);
+          const strikeDamage = unit.type === 'rider' && unit.chargeReady ? unit.damage * 1.55 : unit.damage;
+          damageUnit(target,strikeDamage,unit.color,unit.splash);
+          if (unit.type === 'rider' && unit.chargeReady) { addParticle(unit.x,unit.y,'#e6c47d','charge',9); battle.lastEvent = 'Swift Riders launched a cavalry charge'; }
+          unit.chargeReady = false;
           addParticle((unit.x+target.x)/2,(unit.y+target.y)/2,unit.color,'slash',4);
         }
       }
@@ -1043,6 +1157,8 @@
       if (!battle.paused) {
         const dt = rawDt*battle.speed;
         battle.elapsed += dt;
+        if (living(battle.units).length === 0) battle.emptyFieldTime += rawDt;
+        else battle.emptyFieldTime = 0;
         living(battle.units).forEach(unit => updateFighter(unit,dt));
         living(battle.enemies).forEach(unit => updateFighter(unit,dt));
         updateProjectiles(dt);
@@ -1053,7 +1169,7 @@
       drawBattleField();
       updateLiveStats();
       if (living(battle.enemies).length === 0) { finishLiveBattle(true); return; }
-      if (living(battle.units).length === 0) { finishLiveBattle(false); return; }
+      if (battle.emptyFieldTime >= 30) { finishLiveBattle(false, 'empty'); return; }
       battleAnimation = requestAnimationFrame(battleLoop);
     }
 
@@ -1062,10 +1178,11 @@
       $('livePlayerCount').textContent = `${living(battle.units).length} / ${battle.units.length}`;
       $('liveEnemyCount').textContent = `${living(battle.enemies).length} / ${battle.enemies.length}`;
       $('liveEventText').textContent = battle.lastEvent;
+      $('emptyFieldTimer').textContent = living(battle.units).length > 0 ? 'Paused by active squads' : `${Math.max(0,30-battle.emptyFieldTime).toFixed(1)}s remaining`;
       $('battleStatus').textContent = battle.paused ? 'Paused' : `Battle · ${battle.speed}×`;
     }
 
-    function finishLiveBattle(won) {
+    function finishLiveBattle(won, reason = 'battle') {
       if (!battle || battle.phase !== 'running') return;
       battle.phase = 'finished';
       if (battleAnimation) cancelAnimationFrame(battleAnimation);
@@ -1084,47 +1201,70 @@
       });
       state.deployed = Object.fromEntries(units.map(unit => [unit.id,0]));
       const survivorCount = surviving.length;
+      let extraMessage = '';
 
       if (won) {
         state.owners[index] = 'player';
         if (!state.completed.includes(index)) state.completed.push(index);
         state.supplies += stage.reward;
-        state.inventory.recruit += stage.supplyBonus;
-        const unlockedUnit = stage.unlock;
-        let unlockMessage = '';
-        if (unlockedUnit && !state.unlocked.includes(unlockedUnit)) {
-          const unit = units.find(item => item.id === unlockedUnit);
-          state.unlocked.push(unlockedUnit);
-          state.inventory[unlockedUnit] = (state.inventory[unlockedUnit] || 0) + 2;
-          unlockMessage = ` ${unit.name} has been unlocked, with 2 squads added to your barracks.`;
+        state.gold += stage.goldReward;
+        state.highestLevelCleared = Math.max(state.highestLevelCleared,index+1);
+        const milestoneUnit = units.find(unit => unit.unlockAt === index + 1);
+        if (milestoneUnit && !state.unlocked.includes(milestoneUnit.id)) {
+          state.unlocked.push(milestoneUnit.id);
+          state.inventory[milestoneUnit.id] = (state.inventory[milestoneUnit.id] || 0) + 2;
+          extraMessage += ` ${milestoneUnit.name} unlocked at level ${index+1}; two squads joined your barracks.`;
         }
         if (index === stages.length-1) {
           state.campaignWon = true;
-          state.report = {won:true,playerRemaining:survivorCount,totalLost,message:`Your surviving squads secured Crownfall. The grand coalition has withdrawn and the Crownlands are united. ${survivorCount} of your squads made it back; ${totalLost} were routed.`};
+          state.report = {won:true,playerRemaining:survivorCount,totalLost,message:`Your surviving squads secured Crownfall. The grand coalition has withdrawn and the Crownlands are united. ${survivorCount} squads returned; ${totalLost} were routed. You earned ${stage.reward} supplies and ${stage.goldReward} gold.`};
         } else {
           state.currentStage = Math.min(stages.length-1,index+1);
-          state.report = {won:true,playerRemaining:survivorCount,totalLost,message:`Your army secured ${stage.name}. ${survivorCount} squad${survivorCount===1?'':'s'} survived and returned to the barracks; ${totalLost} were routed. You earned ${stage.reward} supplies.${stage.supplyBonus?` ${stage.supplyBonus} Foot Guard reinforcements joined your army.`:''}${unlockMessage}`};
+          state.report = {won:true,playerRemaining:survivorCount,totalLost,message:`Your army secured ${stage.name}. ${survivorCount} squads survived and returned; ${totalLost} were routed. You earned ${stage.reward} supplies and ${stage.goldReward} gold.${extraMessage}`};
         }
       } else {
         state.owners[index] = claimant;
+        if (state.completed.includes(index)) state.completed = state.completed.filter(n => n !== index);
+        let pushbackText = '';
+        if (index > 0 && state.owners[index-1] === 'player') {
+          const lostRearRegion = stages[index-1].name;
+          state.owners[index-1] = claimant;
+          state.completed = state.completed.filter(n => n !== index-1);
+          state.currentStage = index-1;
+          pushbackText = ` The retreat also cost you ${lostRearRegion}; your frontier has fallen back one territory. Retake it to reopen the route.`;
+        } else {
+          state.currentStage = Math.max(0,index);
+          pushbackText = ' Your commanders are holding the nearest safe line. Regroup here and try again.';
+        }
         state.supplies += 4;
-        state.report = {won:false,playerRemaining:0,totalLost,message:`Your army was pushed back. ${nations[claimant].name} has claimed ${stage.name}. All ${totalLost} deployed squads were routed. Your commanders recovered 4 supplies. Train more squads and try another formation.`};
+        const emptyText = reason === 'empty' ? ' No friendly squad remained on the field for 30 seconds.' : '';
+        state.report = {won:false,playerRemaining:survivorCount,totalLost,message:`Your army was pushed back.${emptyText} ${nations[claimant].name} has claimed ${stage.name}. ${totalLost} deployed squads were routed. Your commanders recovered 4 supplies.${pushbackText}`};
       }
 
-      battle.result = won;
       $('deploymentPanel').classList.add('hidden');
       $('livePanel').classList.add('hidden');
       $('battleResultPanel').classList.remove('hidden');
       $('battleCloseButton').disabled = false;
       $('battleStatus').textContent = won ? 'Territory secured' : 'Army routed';
       $('battleResultSymbol').textContent = won ? '✦' : '↶';
-      $('battleResultTitle').textContent = won ? 'Victory — the field is yours' : 'Defeat — the army has retreated';
+      $('battleResultTitle').textContent = won ? 'Victory — the field is yours' : 'Defeat — the frontier retreats';
       $('battleResultText').textContent = won
-        ? `${stage.name} is now yours. ${survivorCount} squads survived, ${totalLost} were routed. Your campaign rewards have been added.`
-        : `${nations[claimant].name} has claimed ${stage.name}. ${totalLost} squads were routed. You can rebuild and try again.`;
-      $('battleHint').textContent = won ? 'Your surviving squads are returning to the barracks.' : 'The remaining force has withdrawn. Rebuild your army and try a different placement.';
+        ? `${stage.name} is yours. ${survivorCount} squads survived and ${totalLost} were routed. You earned ${stage.reward} supplies and ${stage.goldReward} gold.${extraMessage}`
+        : `${nations[claimant].name} has claimed ${stage.name}. ${totalLost} squads were routed. Your frontier may have fallen back one region.`;
+      $('battleHint').textContent = won ? 'The surviving squads are returning to camp.' : 'The remaining force has withdrawn. Rebuild, improve your squads, and retake the lost frontier.';
       renderAll();
-      showToast(won ? `${stage.name} secured!` : `${stage.name} lost. Regroup and try again.`);
+      showToast(won ? `${stage.name} secured! +${stage.goldReward} gold` : `${stage.name} lost. Your frontier has retreated.`);
+
+      clearTimeout(autoReturnTimeout);
+      clearInterval(returnCountdownInterval);
+      const returnAt = Date.now() + 10000;
+      const updateReturnLabel = () => {
+        const seconds = Math.max(0,Math.ceil((returnAt-Date.now())/1000));
+        $('returnCountdown').textContent = `Returning to camp in ${seconds} second${seconds===1?'':'s'}…`;
+      };
+      updateReturnLabel();
+      returnCountdownInterval = setInterval(updateReturnLabel,250);
+      autoReturnTimeout = setTimeout(() => closeBattle(),10000);
     }
 
     function drawBattleField() {
@@ -1207,65 +1347,149 @@
       if (!unit.fade && !unit.alive) return;
       const alpha=unit.alive?1:Math.max(0,unit.fade);
       const scale=unit.radius/15;
-      const bob=unit.alive?Math.sin((battle?.elapsed||0)*5+unit.bob)*(unit.flying?4:1.8):0;
+      const time=battle?.elapsed||0;
+      const bob=unit.alive?Math.sin(time*5+unit.bob)*(unit.flying?4:1.8):0;
       const x=unit.x, y=unit.y+bob, dir=unit.facing || (unit.team==='player'?1:-1);
       ctx.save();
       ctx.globalAlpha=alpha;
-      // A little shadow keeps the figures grounded; skyships hover above it.
       ctx.fillStyle='rgba(12,22,25,.30)';
       ctx.beginPath();
-      ctx.ellipse(x,unit.y+(unit.flying?22:13)*scale,unit.radius*1.12,5*scale,0,0,Math.PI*2);
+      ctx.ellipse(x,unit.y+(unit.flying?22:13)*scale,unit.radius*1.25,5*scale,0,0,Math.PI*2);
       ctx.fill();
-      if(unit.flying){
-        ctx.strokeStyle=unit.color;ctx.globalAlpha=alpha*.8;ctx.lineWidth=3*scale;
-        ctx.beginPath();ctx.moveTo(x-19*scale,y-4*scale);ctx.quadraticCurveTo(x-9*scale,y-17*scale,x,y-5*scale);ctx.quadraticCurveTo(x+9*scale,y-17*scale,x+19*scale,y-4*scale);ctx.stroke();ctx.globalAlpha=alpha;
+
+      if (unit.type === 'rider' && unit.team === 'player') {
+        // Mounted cavalry: a horse with a barrel, neck, muzzle, mane, tail,
+        // bridle, saddle, four separately animated legs, and a visible rider.
+        ctx.save();
+        ctx.translate(x,y);
+        ctx.scale(dir*scale,scale);
+        const gait=Math.sin(time*11+unit.bob);
+        const lift=Math.cos(time*11+unit.bob);
+        // Tail and flowing mane.
+        ctx.strokeStyle='#4b3026';ctx.lineWidth=2.8;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(-17,-2);ctx.quadraticCurveTo(-26,-9+gait*2,-30,-2+gait*3);ctx.stroke();
+        // Far-side legs first, then near-side legs. Each leg has a knee and hoof.
+        const legs=[{hx:-12,phase:0},{hx:-8,phase:Math.PI},{hx:9,phase:Math.PI},{hx:13,phase:0}];
+        legs.forEach((leg,index)=>{
+          const swing=Math.sin(time*11+unit.bob+leg.phase)*4.5;
+          const liftLeg=Math.max(0,Math.cos(time*11+unit.bob+leg.phase))*3.2;
+          const hx=leg.hx;
+          const kneeX=hx+swing*.55;
+          const kneeY=8+liftLeg;
+          const hoofX=hx+swing;
+          const hoofY=17-liftLeg;
+          ctx.strokeStyle=index%2?'#55372d':'#674333';ctx.lineWidth=2.8;ctx.lineCap='round';
+          ctx.beginPath();ctx.moveTo(hx,2);ctx.lineTo(kneeX,kneeY);ctx.lineTo(hoofX,hoofY);ctx.stroke();
+          ctx.fillStyle='#282a29';ctx.beginPath();ctx.ellipse(hoofX+1,hoofY,2.8,1.7,0,0,Math.PI*2);ctx.fill();
+        });
+        // Horse barrel, rounded hindquarters, chest and underside.
+        ctx.fillStyle=unit.flash>0?'#fff4de':'#87533a';
+        ctx.strokeStyle='#392a25';ctx.lineWidth=1.2;
+        ctx.beginPath();ctx.ellipse(-2,0,19,9,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#a96d4a';ctx.beginPath();ctx.ellipse(-13,-1,8.5,8,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#75452f';ctx.beginPath();ctx.ellipse(10,1,8,8,0,0,Math.PI*2);ctx.fill();
+        // Neck rises naturally from the shoulder into the head.
+        ctx.fillStyle='#925c3e';ctx.strokeStyle='#392a25';ctx.lineWidth=1.1;
+        ctx.beginPath();ctx.moveTo(7,-5);ctx.quadraticCurveTo(12,-11,14,-19);ctx.quadraticCurveTo(18,-24,24,-20);ctx.lineTo(22,-12);ctx.quadraticCurveTo(16,-11,14,-1);ctx.closePath();ctx.fill();ctx.stroke();
+        // Head, cheek, muzzle, nostril and ears.
+        ctx.fillStyle='#9b6547';ctx.beginPath();ctx.ellipse(22,-18,6.2,5.1,-.25,0,Math.PI*2);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#c18a67';ctx.beginPath();ctx.ellipse(27,-15.5,4.5,2.8,-.1,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#2b211d';ctx.beginPath();ctx.arc(24,-19,1,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(29,-15.5,.7,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#493027';ctx.beginPath();ctx.moveTo(18,-22);ctx.lineTo(17,-29);ctx.lineTo(21,-24);ctx.closePath();ctx.fill();
+        ctx.beginPath();ctx.moveTo(23,-22);ctx.lineTo(26,-28);ctx.lineTo(26,-21);ctx.closePath();ctx.fill();
+        // Mane along the crest of the neck.
+        ctx.strokeStyle='#3b2924';ctx.lineWidth=3.2;ctx.beginPath();ctx.moveTo(13,-17);ctx.quadraticCurveTo(17,-25,24,-22);ctx.stroke();
+        for(let m=0;m<4;m++){ctx.beginPath();ctx.moveTo(14+m*2.2,-17-m*1.1);ctx.lineTo(12+m*2.2,-20-m*1.1);ctx.stroke();}
+        // Saddle blanket, leather saddle, bridle and reins.
+        ctx.fillStyle='#b84f3e';ctx.fillRect(-5,-9,13,5);
+        ctx.fillStyle='#4a3029';ctx.beginPath();ctx.ellipse(1,-10,7,3.2,0,Math.PI,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#d5bd85';ctx.lineWidth=1.1;ctx.beginPath();ctx.moveTo(19,-18);ctx.lineTo(27,-14);ctx.lineTo(23,-9);ctx.stroke();
+        ctx.strokeStyle='#553b2c';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(23,-14);ctx.lineTo(7,-8);ctx.stroke();
+        // Rider's boots, cloak, torso, arm, helmet and lance.
+        ctx.fillStyle='#3e4145';ctx.fillRect(-5,-17,4,8);
+        ctx.fillStyle='#c4a36a';ctx.beginPath();ctx.moveTo(-5,-23);ctx.lineTo(5,-24);ctx.lineTo(9,-13);ctx.lineTo(-4,-13);ctx.closePath();ctx.fill();
+        ctx.fillStyle='#335e58';ctx.strokeStyle='#172c2a';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(-4,-29);ctx.quadraticCurveTo(0,-33,6,-28);ctx.lineTo(8,-17);ctx.lineTo(-5,-17);ctx.closePath();ctx.fill();ctx.stroke();
+        ctx.fillStyle='#e2c4a1';ctx.beginPath();ctx.arc(1,-34,4.3,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#c6aa76';ctx.beginPath();ctx.arc(1,-35,4.8,Math.PI,Math.PI*2);ctx.fill();
+        ctx.fillRect(-3,-35,8,2);
+        ctx.strokeStyle='#c9b17b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(5,-27);ctx.lineTo(10,-22);ctx.stroke();
+        ctx.strokeStyle='#e0d2aa';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(9,-22);ctx.lineTo(31,-45);ctx.stroke();
+        ctx.fillStyle='#f0dfad';ctx.beginPath();ctx.moveTo(31,-45);ctx.lineTo(27,-43);ctx.lineTo(30,-40);ctx.closePath();ctx.fill();
+        ctx.restore();
+      } else if (unit.flying) {
+        // Aerial crew: distinct glider wings, hanging gondola and pilot.
+        ctx.strokeStyle=unit.color;ctx.lineWidth=3.2*scale;ctx.fillStyle='rgba(215,232,226,.5)';
+        ctx.beginPath();ctx.moveTo(x-23*scale,y-4*scale);ctx.quadraticCurveTo(x-10*scale,y-25*scale,x,y-7*scale);ctx.quadraticCurveTo(x+10*scale,y-25*scale,x+23*scale,y-4*scale);ctx.closePath();ctx.fill();ctx.stroke();
+        ctx.strokeStyle='#d7c69a';ctx.lineWidth=1.4*scale;ctx.beginPath();ctx.moveTo(x-11*scale,y-9*scale);ctx.lineTo(x-4*scale,y+8*scale);ctx.moveTo(x+11*scale,y-9*scale);ctx.lineTo(x+4*scale,y+8*scale);ctx.stroke();
+        ctx.fillStyle='#78583d';ctx.fillRect(x-7*scale,y+5*scale,14*scale,7*scale);
+        ctx.fillStyle=unit.color;ctx.beginPath();ctx.arc(x,y-3*scale,6*scale,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#e8c9a4';ctx.beginPath();ctx.arc(x,y-12*scale,4.4*scale,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#e7d5aa';ctx.fillRect(x-4*scale,y-17*scale,8*scale,3*scale);
+      } else if (unit.type === 'titan' && unit.team === 'player') {
+        // Stone Titan: broad rock shoulders, segmented boulder body and huge stone club.
+        const sc=scale;
+        ctx.fillStyle='#625d55';ctx.strokeStyle='#302f2c';ctx.lineWidth=1.6*sc;
+        ctx.beginPath();ctx.moveTo(x-18*sc,y-7*sc);ctx.lineTo(x-14*sc,y-20*sc);ctx.lineTo(x-5*sc,y-25*sc);ctx.lineTo(x+8*sc,y-23*sc);ctx.lineTo(x+18*sc,y-12*sc);ctx.lineTo(x+15*sc,y+12*sc);ctx.lineTo(x-15*sc,y+12*sc);ctx.closePath();ctx.fill();ctx.stroke();
+        ctx.fillStyle='#8a8171';ctx.beginPath();ctx.arc(x,y-25*sc,10*sc,0,Math.PI*2);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#292d2b';ctx.fillRect(x-6*sc,y-27*sc,3*sc,3*sc);ctx.fillRect(x+3*sc,y-27*sc,3*sc,3*sc);
+        ctx.strokeStyle='#5c564d';ctx.lineWidth=7*sc;ctx.beginPath();ctx.moveTo(x+10*sc,y-8*sc);ctx.lineTo(x+23*sc,y+10*sc);ctx.stroke();
+        ctx.fillStyle='#aaa08d';ctx.fillRect(x+18*sc,y+5*sc,13*sc,13*sc);
+      } else {
+        const sc=scale;
+        const isEnemy=unit.team==='enemy';
+        const armor=unit.flash>0?'#fff4dc':unit.color;
+        const walk=Math.sin(time*9+unit.bob)*2.2;
+        // Infantry leg silhouettes.
+        ctx.strokeStyle=isEnemy?'#44302b':'#283a39';ctx.lineWidth=3.4*sc;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(x-3*sc,y+7*sc);ctx.lineTo(x-5*sc,y+15*sc+walk);ctx.moveTo(x+3*sc,y+7*sc);ctx.lineTo(x+5*sc,y+15*sc-walk);ctx.stroke();
+        // Distinct silhouettes and equipment per class.
+        if (unit.type==='guardian') {
+          ctx.fillStyle='#b5a27e';ctx.strokeStyle='#4d4638';ctx.lineWidth=1.5*sc;
+          ctx.beginPath();ctx.moveTo(x-10*sc,y-7*sc);ctx.lineTo(x+10*sc,y-7*sc);ctx.lineTo(x+9*sc,y+9*sc);ctx.lineTo(x,y+14*sc);ctx.lineTo(x-9*sc,y+9*sc);ctx.closePath();ctx.fill();ctx.stroke();
+          ctx.fillStyle='#d5c39d';ctx.fillRect(x-8*sc,y-11*sc,16*sc,4*sc);
+          ctx.fillStyle='#8a795d';ctx.beginPath();ctx.moveTo(x+9*sc,y-8*sc);ctx.lineTo(x+20*sc,y-4*sc);ctx.lineTo(x+19*sc,y+12*sc);ctx.lineTo(x+9*sc,y+15*sc);ctx.closePath();ctx.fill();ctx.stroke();
+          ctx.fillStyle='#e2cf9f';ctx.fillRect(x+12*sc,y-2*sc,4*sc,3*sc);
+          ctx.fillStyle='#4a4034';ctx.beginPath();ctx.arc(x,y-13*sc,7*sc,Math.PI,Math.PI*2);ctx.fill();
+          ctx.fillStyle='#d4bd8b';ctx.fillRect(x-1*sc,y-21*sc,3*sc,6*sc);
+        } else if (unit.type==='ranger') {
+          ctx.fillStyle=armor;ctx.beginPath();ctx.moveTo(x-9*sc,y-4*sc);ctx.lineTo(x-4*sc,y-13*sc);ctx.lineTo(x+5*sc,y-13*sc);ctx.lineTo(x+11*sc,y+10*sc);ctx.lineTo(x-11*sc,y+10*sc);ctx.closePath();ctx.fill();
+          ctx.fillStyle='#465947';ctx.beginPath();ctx.moveTo(x-7*sc,y-10*sc);ctx.lineTo(x,y-21*sc);ctx.lineTo(x+8*sc,y-10*sc);ctx.closePath();ctx.fill();
+          ctx.strokeStyle='#d7c7a0';ctx.lineWidth=2*sc;ctx.beginPath();ctx.arc(x+dir*13*sc,y+1*sc,10*sc,-1.2,1.2);ctx.stroke();
+          ctx.strokeStyle='#e7d9b6';ctx.lineWidth=1*sc;ctx.beginPath();ctx.moveTo(x+dir*13*sc,y-9*sc);ctx.lineTo(x+dir*13*sc,y+11*sc);ctx.stroke();
+          ctx.fillStyle='#654530';ctx.fillRect(x-dir*9*sc,y-5*sc,4*sc,15*sc);
+        } else if (unit.type==='medic') {
+          ctx.fillStyle='#e4e8d9';ctx.strokeStyle='#60786e';ctx.lineWidth=1*sc;
+          ctx.beginPath();ctx.moveTo(x-8*sc,y-5*sc);ctx.lineTo(x,y-13*sc);ctx.lineTo(x+8*sc,y-5*sc);ctx.lineTo(x+10*sc,y+10*sc);ctx.lineTo(x-10*sc,y+10*sc);ctx.closePath();ctx.fill();ctx.stroke();
+          ctx.fillStyle='#b84f4b';ctx.fillRect(x-2*sc,y-8*sc,4*sc,12*sc);ctx.fillRect(x-6*sc,y-4*sc,12*sc,4*sc);
+          ctx.strokeStyle='#8b744c';ctx.lineWidth=2.4*sc;ctx.beginPath();ctx.moveTo(x+11*sc,y+8*sc);ctx.lineTo(x+15*sc,y-19*sc);ctx.stroke();
+          ctx.strokeStyle='#f2eee0';ctx.lineWidth=3*sc;ctx.beginPath();ctx.moveTo(x+15*sc,y-24*sc);ctx.lineTo(x+15*sc,y-17*sc);ctx.moveTo(x+11*sc,y-20.5*sc);ctx.lineTo(x+19*sc,y-20.5*sc);ctx.stroke();
+          ctx.fillStyle='#e7c9a6';ctx.beginPath();ctx.arc(x,y-13*sc,5*sc,0,Math.PI*2);ctx.fill();
+        } else if (unit.type==='engineer') {
+          ctx.fillStyle='#a98a4f';ctx.beginPath();ctx.moveTo(x-8*sc,y-5*sc);ctx.lineTo(x+8*sc,y-5*sc);ctx.lineTo(x+7*sc,y+10*sc);ctx.lineTo(x-7*sc,y+10*sc);ctx.closePath();ctx.fill();
+          ctx.fillStyle='#d5b65f';ctx.fillRect(x-8*sc,y-19*sc,16*sc,5*sc);ctx.fillRect(x-5*sc,y-24*sc,10*sc,6*sc);
+          ctx.fillStyle='#6d5940';ctx.fillRect(x-13*sc,y-2*sc,5*sc,10*sc);
+          ctx.strokeStyle='#b9a077';ctx.lineWidth=3*sc;ctx.beginPath();ctx.moveTo(x+8*sc,y-8*sc);ctx.lineTo(x+19*sc,y+8*sc);ctx.stroke();
+          ctx.fillStyle='#d5c19a';ctx.fillRect(x+15*sc,y+4*sc,8*sc,4*sc);
+        } else {
+          // Foot Guard / enemy infantry with a tunic, helmet, and short spear.
+          ctx.fillStyle=armor;ctx.strokeStyle='rgba(18,31,31,.72)';ctx.lineWidth=1.2*sc;
+          ctx.beginPath();ctx.moveTo(x-7*sc,y-5*sc);ctx.quadraticCurveTo(x-9*sc,y+1*sc,x-7*sc,y+10*sc);ctx.lineTo(x+7*sc,y+10*sc);ctx.quadraticCurveTo(x+9*sc,y+1*sc,x+7*sc,y-5*sc);ctx.closePath();ctx.fill();ctx.stroke();
+          ctx.fillStyle='#e7c8a6';ctx.beginPath();ctx.arc(x,y-12*sc,4.8*sc,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle='#c5b68f';ctx.beginPath();ctx.arc(x,y-14*sc,5.5*sc,Math.PI,Math.PI*2);ctx.fill();ctx.fillRect(x-6*sc,y-14*sc,12*sc,2*sc);
+          ctx.strokeStyle='#d8c89e';ctx.lineWidth=2.2*sc;ctx.beginPath();ctx.moveTo(x+dir*8*sc,y+5*sc);ctx.lineTo(x+dir*17*sc,y-15*sc);ctx.stroke();
+          ctx.fillStyle='#eee0b7';ctx.beginPath();ctx.moveTo(x+dir*17*sc,y-15*sc);ctx.lineTo(x+dir*14*sc,y-10*sc);ctx.lineTo(x+dir*20*sc,y-11*sc);ctx.closePath();ctx.fill();
+        }
       }
-      // Legs and tunic.
-      if(!unit.flying){
-        ctx.strokeStyle='#27343a';ctx.lineWidth=3.2*scale;ctx.lineCap='round';
-        ctx.beginPath();ctx.moveTo(x-3.5*scale,y+7*scale);ctx.lineTo(x-5.5*scale,y+15*scale);ctx.moveTo(x+3.5*scale,y+7*scale);ctx.lineTo(x+5.5*scale,y+15*scale);ctx.stroke();
-      }
-      ctx.fillStyle=unit.flash>0?'#fff5dd':unit.color;
-      ctx.strokeStyle='rgba(18,31,31,.72)';ctx.lineWidth=1.4*scale;
-      ctx.beginPath();
-      ctx.moveTo(x-6.5*scale,y-4*scale);
-      ctx.quadraticCurveTo(x-8*scale,y+1*scale,x-6*scale,y+9*scale);
-      ctx.lineTo(x+6*scale,y+9*scale);
-      ctx.quadraticCurveTo(x+8*scale,y+1*scale,x+6.5*scale,y-4*scale);
-      ctx.closePath();ctx.fill();ctx.stroke();
-      // Arms and head.
-      ctx.strokeStyle=unit.color;ctx.lineWidth=3.5*scale;ctx.lineCap='round';
-      ctx.beginPath();ctx.moveTo(x-5*scale,y-1*scale);ctx.lineTo(x-10*scale,y+5*scale);ctx.moveTo(x+5*scale,y-1*scale);ctx.lineTo(x+10*scale,y+4*scale);ctx.stroke();
-      ctx.fillStyle='#e7c8a6';ctx.beginPath();ctx.arc(x,y-9*scale,4.8*scale,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle=unit.color;ctx.beginPath();ctx.arc(x,y-10.3*scale,5*scale,Math.PI,Math.PI*2);ctx.fill();
-      // Distinctive equipment silhouettes by squad role.
-      if(unit.type==='guardian'){
-        const sx=x+dir*11*scale, sy=y+1*scale;ctx.fillStyle='#bdad86';ctx.strokeStyle='#554d3c';ctx.lineWidth=1.5*scale;
-        ctx.beginPath();ctx.moveTo(sx-dir*5*scale,sy-8*scale);ctx.lineTo(sx+dir*5*scale,sy-5*scale);ctx.lineTo(sx+dir*4*scale,sy+7*scale);ctx.lineTo(sx,sy+12*scale);ctx.lineTo(sx-dir*5*scale,sy+5*scale);ctx.closePath();ctx.fill();ctx.stroke();
-      } else if(unit.type==='ranger'){
-        ctx.strokeStyle='#6d4730';ctx.lineWidth=2*scale;ctx.beginPath();ctx.arc(x-dir*10*scale,y+1*scale,8*scale,-1.15,1.15);ctx.stroke();
-        ctx.strokeStyle='#ead9b2';ctx.lineWidth=1*scale;ctx.beginPath();ctx.moveTo(x-dir*9*scale,y-6*scale);ctx.lineTo(x-dir*9*scale,y+8*scale);ctx.stroke();
-      } else if(unit.type==='recruit' || unit.type==='rider'){
-        ctx.strokeStyle='#d7c9a0';ctx.lineWidth=2*scale;ctx.beginPath();ctx.moveTo(x+dir*8*scale,y+6*scale);ctx.lineTo(x+dir*18*scale,y-13*scale);ctx.stroke();
-        ctx.fillStyle='#eee0b7';ctx.beginPath();ctx.moveTo(x+dir*18*scale,y-13*scale);ctx.lineTo(x+dir*15*scale,y-9*scale);ctx.lineTo(x+dir*20*scale,y-10*scale);ctx.closePath();ctx.fill();
-      } else if(unit.type==='medic'){
-        ctx.fillStyle='#f0ead8';ctx.fillRect(x+7*scale,y-16*scale,3*scale,10*scale);ctx.fillRect(x+3.5*scale,y-12.5*scale,10*scale,3*scale);
-      } else if(unit.type==='engineer'){
-        ctx.strokeStyle='#e3c58b';ctx.lineWidth=3*scale;ctx.beginPath();ctx.moveTo(x+dir*8*scale,y-7*scale);ctx.lineTo(x+dir*17*scale,y+8*scale);ctx.stroke();
-      } else if(unit.type==='titan'){
-        ctx.strokeStyle='#564e48';ctx.lineWidth=4*scale;ctx.beginPath();ctx.moveTo(x+dir*8*scale,y-2*scale);ctx.lineTo(x+dir*16*scale,y-16*scale);ctx.stroke();
-        ctx.fillStyle='#b5a58a';ctx.fillRect(x+dir*12*scale-3*scale,y-20*scale,8*scale,8*scale);
-      }
-      // Small squad badge, plus the nation's colour/name for the opposing coalition.
+
       if(unit.team==='player'){
-        ctx.fillStyle='rgba(12,35,31,.9)';ctx.beginPath();ctx.arc(x,y+3*scale,5*scale,0,Math.PI*2);ctx.fill();
-        ctx.fillStyle='#eaffed';ctx.font=`900 ${Math.max(7,8*scale)}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(unitLetters[unit.type]||'•',x,y+3*scale);
+        ctx.fillStyle='rgba(12,35,31,.92)';ctx.beginPath();ctx.arc(x,y+4*scale,5.5*scale,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#eaffed';ctx.font=`900 ${Math.max(7,8*scale)}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(unitLetters[unit.type]||'•',x,y+4*scale);
       } else {
         ctx.fillStyle='rgba(36,19,17,.9)';ctx.beginPath();ctx.arc(x,y+3*scale,4.5*scale,0,Math.PI*2);ctx.fill();
         ctx.fillStyle='#fff0e8';ctx.font='800 6px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('◆',x,y+3*scale);
         ctx.fillStyle='rgba(255,255,255,.78)';ctx.font='700 8px system-ui';ctx.textAlign='center';ctx.fillText(unit.nation?unit.nation.toUpperCase().slice(0,3):'RIVAL',x,y+unit.radius+13);
       }
-      // Health bar is tied to the squad's actual simulated condition.
       if(unit.alive){
         const w=unit.radius*2.2,h=4,bx=x-w/2,by=y-unit.radius-12;
         ctx.fillStyle='rgba(10,18,20,.72)';ctx.fillRect(bx,by,w,h);
@@ -1278,11 +1502,14 @@
 
     const canvas = document.getElementById('battleCanvas');
     canvas.addEventListener('pointerdown', event => {
-      if (!battle || battle.phase !== 'setup') return;
+      if (!battle || !['setup','running'].includes(battle.phase)) return;
       const point=fieldPoint(event);
-      const hit=[...battle.units].reverse().find(unit=>Math.hypot(unit.x-point.x,unit.y-point.y)<unit.radius+8);
-      if(hit){battle.dragging=hit.id;canvas.classList.add('dragging');canvas.setPointerCapture?.(event.pointerId);return;}
+      if (battle.phase === 'setup') {
+        const hit=[...battle.units].reverse().find(unit=>Math.hypot(unit.x-point.x,unit.y-point.y)<unit.radius+8);
+        if(hit){battle.dragging=hit.id;canvas.classList.add('dragging');canvas.setPointerCapture?.(event.pointerId);return;}
+      }
       if(point.x>470){showToast('Place your squads on the LEFT side of the field.');return;}
+      if (!battle.selectedType) { showToast('Select a squad from the reserve roster below first.'); return; }
       placeSquad(battle.selectedType,point.x,point.y);
     });
     canvas.addEventListener('pointermove', event => {
@@ -1334,12 +1561,15 @@
     $('battleSpeedButton').addEventListener('click', toggleBattleSpeed);
     $('returnCampaignButton').addEventListener('click', closeBattle);
     $('clearButton').addEventListener('click', clearDeployment);
+    $('capacityUpgradeButton').addEventListener('click', upgradeSquadCapacity);
     $('helpButton').addEventListener('click', () => showModal('How to play', `
-      <p><strong>1. Build your force.</strong> Use the + and − buttons to choose up to ${COMMAND_LIMIT} squads. You cannot send more squads than you own.</p>
-      <p><strong>2. Place your army.</strong> Select each squad type, then click on the LEFT half of the battlefield. Drag placed squads to adjust their starting positions, or use Auto arrange.</p>
-      <p><strong>3. Watch the battle.</strong> Start the encounter and squads act on their own: they move, choose nearby opponents, attack, and support allies. Medic squads restore health. Pause or switch to 2× speed whenever you like.</p>
-      <p><strong>4. Claim regions.</strong> The battle is decided by what happens on the field. Squads that survive return to your barracks; routed squads are lost. Win to secure the region. Lose and a rival nation claims it.</p>
-      <p><strong>5. Grow your army.</strong> Spend supplies to train squads. Victories provide supplies, Foot Guard reinforcements, and new unit types. Progress saves automatically in this browser.</p>
+      <p><strong>1. Build your force.</strong> Use the + and − buttons to choose up to your squad capacity. Train new squads with supplies.</p>
+      <p><strong>2. Improve your army.</strong> Gold upgrades each unlocked unit type, improving its health, damage and movement. Spend gold on +2 squad-capacity upgrades too.</p>
+      <p><strong>3. Place and reinforce.</strong> Place any number of squads on the LEFT side and start when at least one is on the field. Select spare squads below the battlefield and click an open spot on your side to deploy them during combat.</p>
+      <p><strong>4. Watch the battle.</strong> Squads move, attack and support allies automatically. Mounted riders use horses with animated legs and charge attacks. If your side has no active squad on the field for 30 seconds, you lose.</p>
+      <p><strong>5. Secure the frontier.</strong> A victory claims the region and earns supplies and gold. A defeat lets a rival claim the region and can push your line back by one secured territory.</p>
+      <p><strong>6. Unlock units.</strong> New unit classes unlock after clearing levels 5, 10, 15, 20, 25, 30 and 35. There are 40 campaign levels. Each finished battle returns to camp automatically after 10 seconds.</p>
+      <p>Campaign progress saves automatically in this browser.</p>
     `, '✦'));
     $('resetButton').addEventListener('click', () => showModal('Reset campaign?', `
       <p>This will erase your saved campaign on this browser and return you to the beginning with your starting army. This cannot be undone.</p>
