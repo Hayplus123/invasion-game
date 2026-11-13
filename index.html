@@ -218,6 +218,9 @@
     .unit-actions button { min-width:0; }
     .upgrade-btn { color:#f0d18c; border-color:rgba(226,189,117,.3); }
     .unit-level { color:var(--gold); font-weight:800; }
+    .reinforcement-call { flex:1 1 170px; }
+    .reinforcement-call button { margin-top:7px; width:100%; color:var(--gold); border-color:rgba(226,189,117,.35); }
+    .reinforcement-call button:disabled { opacity:.35; cursor:not-allowed; }
     .return-wrap { margin-left:auto; display:flex; align-items:flex-end; flex-direction:column; gap:5px; }
     .return-wrap small { color:var(--gold); font-size:10px; }
     .campaign-map { max-height:none; }
@@ -475,6 +478,7 @@
           <div class="live-stat"><span>Rival active squads</span><strong id="liveEnemyCount">0</strong></div>
           <div class="live-stat"><span>Battle events</span><strong id="liveEventText">Awaiting orders</strong></div>
           <div class="live-stat"><span>Empty-field defeat timer</span><strong id="emptyFieldTimer">30.0s</strong></div>
+          <div class="live-stat reinforcement-call"><span>Reserve call-in</span><strong id="reinforcementTimer">Ready · 1 call</strong><button class="small-btn" id="callReinforcementButton" type="button">Call reinforcement</button></div>
           <div class="battle-control-buttons"><button class="small-btn" id="pauseBattleButton">Pause</button><button class="small-btn" id="battleSpeedButton">Speed: 1×</button></div>
         </div>
         <div id="battleResultPanel" class="battle-result-panel hidden">
@@ -556,7 +560,7 @@
     const stages = stageNames.map((name, index) => {
       const level = index + 1;
       const pattern = defencePatterns[index % defencePatterns.length];
-      const reinforcementScale = Math.floor((level - 1) / 12);
+      const reinforcementScale = Math.floor(Math.max(0, level - 6) / 5);
       const defenders = pattern.map(defender => ({
         nation: defender.nation,
         squads: defender.squads + reinforcementScale
@@ -577,8 +581,9 @@
 
     function freshState() {
       return {
-        progressionVersion:2,
+        progressionVersion:3,
         supplies:25,
+        reinforcementUpgrade:0,
         gold:100,
         inventory:{recruit:8,ranger:0,guardian:0,medic:0,rider:0,engineer:0,skyship:0,titan:0},
         unlocked:['recruit'],
@@ -602,6 +607,7 @@
         const base = freshState();
         if (!saved || typeof saved !== 'object') return base;
         base.supplies = Number.isFinite(saved.supplies) ? Math.max(0, saved.supplies) : base.supplies;
+        base.reinforcementUpgrade = Math.max(0, Math.min(1, Math.floor(Number(saved.reinforcementUpgrade) || 0)));
         base.gold = Number.isFinite(saved.gold) ? Math.max(0, saved.gold) : base.gold;
         base.inventory = {...base.inventory, ...(saved.inventory || {})};
         base.deployed = {...base.deployed, ...(saved.deployed || {})};
@@ -629,7 +635,7 @@
           base.upgrades[unit.id] = Math.max(0, Math.min(MAX_UNIT_UPGRADE, Math.floor(Number(base.upgrades[unit.id]) || 0)));
         }
         if (!base.unlocked.includes('recruit')) base.unlocked.unshift('recruit');
-        base.progressionVersion = 2;
+        base.progressionVersion = 3;
         return base;
       } catch (error) {
         console.warn('Could not load saved campaign:', error);
@@ -808,6 +814,18 @@
     function renderUnits() {
       const list = $('unitList');
       list.innerHTML = '';
+      const reinforcementUpgradeRow = document.getElementById('reinforcementUpgradeRow');
+      if (reinforcementUpgradeRow) reinforcementUpgradeRow.remove();
+      if (state.highestLevelCleared >= 10) {
+        const row = document.createElement('div');
+        row.id = 'reinforcementUpgradeRow';
+        row.className = 'unit-row';
+        const level = state.reinforcementUpgrade || 0;
+        const cost = 180;
+        row.innerHTML = `<div class="unit-main"><div class="unit-icon">🚩</div><div class="unit-info"><strong>Reinforcement Dispatch</strong><span>Increase timed battlefield call-ins from 1 to 2 per battle.</span></div></div><div class="unit-controls"><span class="unit-level">${level+1} call${level ? 's' : ''}</span></div><div class="unit-actions"><button class="small-btn upgrade-btn" id="upgradeReinforcementButton" ${level >= 1 || state.gold < cost ? 'disabled' : ''}>${level >= 1 ? 'Maximum reached' : `Upgrade · ${cost} gold`}</button></div>`;
+        row.querySelector('#upgradeReinforcementButton').addEventListener('click', upgradeReinforcementDispatch);
+        list.appendChild(row);
+      }
       units.forEach(unit => {
         const unlocked = state.unlocked.includes(unit.id);
         const owned = state.inventory[unit.id] || 0;
@@ -913,6 +931,17 @@
       showToast(`${units.find(unit => unit.id === unitId).name} upgraded to level ${level + 1}.`);
     }
 
+    function upgradeReinforcementDispatch() {
+      if (state.highestLevelCleared < 10) return;
+      if (state.reinforcementUpgrade >= 1) { showToast('Reinforcement dispatch is already upgraded.'); return; }
+      const cost = 180;
+      if (state.gold < cost) { showToast('You need 180 gold to upgrade reinforcement dispatch.'); return; }
+      state.gold -= cost;
+      state.reinforcementUpgrade = 1;
+      saveState(); renderAll();
+      showToast('Reinforcement dispatch upgraded: 2 call-ins per battle.');
+    }
+
     function upgradeSquadCapacity() {
       if (state.commandLimit >= MAX_COMMAND_LIMIT) return;
       const cost = capacityUpgradeCost();
@@ -977,7 +1006,7 @@
         phase:'setup', stageIndex, snapshot, remaining:{...snapshot},
         units:[], enemies:[], projectiles:[], particles:[], selectedType:null,
         dragging:null, paused:false, speed:1, elapsed:0, lastEvent:'Squads are ready',
-        selectedUnit:null, result:null, emptyFieldTime:0
+        selectedUnit:null, result:null, emptyFieldTime:0, reinforcementCharges:1+(state.reinforcementUpgrade||0), reinforcementCooldown:0, enemyWaveTimer:Math.max(38,82-stageIndex*1.05), enemyWavesSent:0
       };
       const first = units.find(unit => (battle.remaining[unit.id] || 0) > 0);
       battle.selectedType = first ? first.id : null;
@@ -1138,6 +1167,45 @@
       }
     }
 
+    function callTimedReinforcement() {
+      if (!battle || battle.phase !== 'running') return;
+      if (battle.reinforcementCharges <= 0) { showToast('No reinforcement call-ins remain this battle.'); return; }
+      if (battle.reinforcementCooldown > 0) { showToast(`Reinforcements ready in ${Math.ceil(battle.reinforcementCooldown)}s.`); return; }
+      const type = units.find(unit => (battle.remaining[unit.id] || 0) > 0)?.id;
+      if (!type) { showToast('No reserve squads remain to call in.'); return; }
+      const unit = units.find(item => item.id === type);
+      const spawnY = 90 + Math.random()*370;
+      const spawnX = 70 + Math.random()*90;
+      placeSquad(type, spawnX, spawnY);
+      battle.reinforcementCharges--;
+      battle.reinforcementCooldown = 45;
+      battle.lastEvent = `${unit.name} arrived as a timed reinforcement`;
+      updateLiveStats();
+      showToast(`${unit.name} called in. Next call-in cooldown: 45 seconds.`);
+    }
+
+    function spawnEnemyReinforcementWave() {
+      if (!battle || battle.phase !== 'running') return;
+      const stage = stages[battle.stageIndex];
+      const defender = stage.defenders[battle.enemyWavesSent % stage.defenders.length];
+      const nation = nations[defender.nation];
+      const waveSize = Math.min(2 + Math.floor(battle.stageIndex/8), 5);
+      const scale = 1 + battle.stageIndex*.025;
+      for (let i=0;i<waveSize;i++) {
+        const kind = (i+battle.enemyWavesSent)%4;
+        const stats = kind===1
+          ? {hp:84*scale,damage:11*scale,speed:39,range:137,cooldown:1.35,style:'ranged',radius:13}
+          : kind===2
+            ? {hp:132*scale,damage:12*scale,speed:30,range:31,cooldown:1.18,style:'melee',radius:17}
+            : {hp:99*scale,damage:12*scale,speed:38,range:30,cooldown:1.12,style:'melee',radius:15};
+        const col=i%3, row=Math.floor(i/3);
+        battle.enemies.push(makeBattleUnit('enemy','enemy',900+Math.random()*45,100+row*82+col*25,{stats,color:nation.color,nation:defender.nation}));
+      }
+      battle.enemyWavesSent++;
+      battle.lastEvent = `${nations[defender.nation].name} sent ${waveSize} reinforcements`;
+      showToast(`Enemy reinforcements arrived: ${waveSize} squads.`);
+    }
+
     function startLiveBattle() {
       if (!battle || battle.phase !== 'setup') return;
       const total = sum(units.map(unit => battle.snapshot[unit.id] || 0));
@@ -1145,6 +1213,7 @@
       battle.phase = 'running';
       battle.paused = false;
       battle.elapsed = 0;
+      battle.enemyWaveTimer = Math.max(38,82-battle.stageIndex*1.05);
       battle.projectiles = [];
       battle.particles = [];
       battle.units.forEach(unit => { unit.attackTimer = .35 + Math.random()*.7; unit.alive = true; });
@@ -1323,6 +1392,12 @@
       if (!battle.paused) {
         const dt = rawDt*battle.speed;
         battle.elapsed += dt;
+        if (battle.reinforcementCooldown > 0) battle.reinforcementCooldown = Math.max(0,battle.reinforcementCooldown-rawDt);
+        battle.enemyWaveTimer -= rawDt;
+        if (battle.enemyWaveTimer <= 0 && battle.stageIndex >= 5 && battle.enemyWavesSent < Math.min(3,1+Math.floor(battle.stageIndex/12))) {
+          spawnEnemyReinforcementWave();
+          battle.enemyWaveTimer = Math.max(48,92-battle.stageIndex*1.1);
+        }
         if (living(battle.units).length === 0) battle.emptyFieldTime += rawDt;
         else battle.emptyFieldTime = 0;
         living(battle.units).forEach(unit => updateFighter(unit,dt));
@@ -1345,6 +1420,11 @@
       $('liveEnemyCount').textContent = `${living(battle.enemies).length} / ${battle.enemies.length}`;
       $('liveEventText').textContent = battle.lastEvent;
       $('emptyFieldTimer').textContent = living(battle.units).length > 0 ? 'Paused by active squads' : `${Math.max(0,30-battle.emptyFieldTime).toFixed(1)}s remaining`;
+      const callButton = $('callReinforcementButton');
+      const reserveAvailable = units.some(unit => (battle.remaining[unit.id] || 0) > 0);
+      callButton.disabled = battle.reinforcementCharges <= 0 || battle.reinforcementCooldown > 0 || !reserveAvailable;
+      callButton.textContent = battle.reinforcementCooldown > 0 ? `Call-in · ${Math.ceil(battle.reinforcementCooldown)}s` : battle.reinforcementCharges > 0 ? 'Call reinforcement' : 'No call-ins left';
+      $('reinforcementTimer').textContent = `${battle.reinforcementCharges} call${battle.reinforcementCharges===1?'':'s'} · ${battle.reinforcementCooldown>0?Math.ceil(battle.reinforcementCooldown)+'s cooldown':'Ready'}`;
       $('battleStatus').textContent = battle.paused ? 'Paused' : `Battle · ${battle.speed}×`;
     }
 
@@ -1728,6 +1808,7 @@
     $('returnCampaignButton').addEventListener('click', closeBattle);
     $('clearButton').addEventListener('click', clearDeployment);
     $('capacityUpgradeButton').addEventListener('click', upgradeSquadCapacity);
+    $('callReinforcementButton').addEventListener('click', callTimedReinforcement);
     $('helpButton').addEventListener('click', () => showModal('How to play', `
       <p><strong>1. Build your force.</strong> Use the + and − buttons to choose up to your squad capacity. Train new squads with supplies.</p>
       <p><strong>2. Improve your army.</strong> Gold upgrades each unlocked unit type, improving its health, damage and movement. Spend gold on +2 squad-capacity upgrades too.</p>
