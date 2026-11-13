@@ -255,6 +255,99 @@
       .map-wrap,.mission-body { padding-left:13px; padding-right:13px; }
       .stat-pill { padding:8px 10px; }
     }
+
+    /* Cartographic campaign map and refined command-room presentation */
+    :root {
+      --bg:#0c1720;
+      --panel:#172832;
+      --panel-2:#203641;
+      --panel-3:#2b4651;
+      --line:rgba(215,226,214,.15);
+      --text:#f1f0e5;
+      --muted:#acbbb5;
+      --gold:#e6c47f;
+      --teal:#83c7b4;
+      --shadow:0 22px 58px rgba(0,0,0,.28);
+      --radius:20px;
+    }
+    body {
+      background:
+        radial-gradient(ellipse at 8% 2%,rgba(81,139,126,.2),transparent 34%),
+        radial-gradient(ellipse at 93% 10%,rgba(190,151,91,.13),transparent 31%),
+        linear-gradient(145deg,#0d1a23,#101e27 55%,#0b151d);
+    }
+    .shell { width:min(1540px,calc(100% - 40px)); padding-top:28px; }
+    .topbar { padding:0 2px 5px; margin-bottom:24px; }
+    .crest { width:54px;height:54px;flex-basis:54px;border-radius:17px;font-size:27px;box-shadow:inset 0 0 22px rgba(226,189,117,.13),0 8px 25px rgba(0,0,0,.22); }
+    .brand h1 { letter-spacing:.14em; }
+    .stat-pill { padding:11px 15px;border-color:rgba(215,226,214,.16);background:linear-gradient(145deg,rgba(31,53,64,.9),rgba(20,36,45,.9));box-shadow:0 5px 18px rgba(0,0,0,.12); }
+    .panel { border-color:rgba(215,226,214,.16);background:linear-gradient(155deg,rgba(30,49,59,.98),rgba(17,32,41,.98));box-shadow:0 20px 60px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.035); }
+    .panel-head { background:linear-gradient(110deg,rgba(255,255,255,.035),transparent 70%);padding:22px 23px 17px; }
+    .eyebrow { letter-spacing:.22em; }
+    .panel-head h2 { font-size:21px;letter-spacing:.015em; }
+    .map-wrap { padding:16px 18px 19px; }
+    .map-key { gap:12px 18px;margin:1px 2px 13px;font-size:10px; }
+    .key-dot { width:9px;height:9px;box-shadow:0 0 9px currentColor;background:#78b78b;color:#78b78b; }
+    .key-dot.enemy { background:#ce816b;color:#ce816b; }
+    .key-dot.contested { background:#e4bd70;color:#e4bd70; }
+    .key-dot.locked { background:#71877b;color:#71877b; }
+    #campaignMap.campaign-map {
+      display:block;position:relative;width:100%;padding:0;overflow:hidden;border-radius:18px;
+      border:1px solid rgba(206,222,209,.2);background:#1c3945;
+      box-shadow:inset 0 0 0 5px rgba(8,21,27,.22),0 13px 30px rgba(0,0,0,.18);
+    }
+    #campaignMap .atlas-svg { display:block;width:100%;height:auto;aspect-ratio:1100/700; }
+    .sea-labels { fill:#a7c1bd;opacity:.56;font-size:11px;font-weight:800;letter-spacing:3px;font-family:Georgia,serif; }
+    .land-shadow { stroke-linejoin:round; }
+    .terrain-contour { fill:none;stroke:#6f805f;stroke-width:2;stroke-opacity:.23; }
+    .river { fill:none;stroke:#5b9ba2;stroke-width:13;stroke-opacity:.48;stroke-linecap:round; }
+    .mountains path:first-child { fill:#827d68;stroke:#e6d9b6;stroke-width:2;stroke-linejoin:round;opacity:.78; }
+    .mountains path:last-child { fill:#e3ddc8;stroke:none;opacity:.8; }
+    .forest path:first-child { fill:#476e55;stroke:#d1c59a;stroke-width:1.5;stroke-linejoin:round; }
+    .forest path:last-child { fill:none;stroke:#6d553b;stroke-width:3;stroke-linecap:round; }
+    .campaign-road-under { fill:none;stroke:#705b3d;stroke-width:9;stroke-linecap:round;stroke-linejoin:round;opacity:.75; }
+    .campaign-road { fill:none;stroke:#f2d28d;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:3 11;opacity:.95; }
+    .territory { --territory:#71877b;cursor:default;outline:none; }
+    .territory polygon { fill:var(--territory);fill-opacity:.43;stroke:#e3d8b7;stroke-opacity:.62;stroke-width:1.6;stroke-linejoin:round;transition:fill-opacity .18s ease,stroke .18s ease,filter .18s ease; }
+    .territory.secured polygon { fill-opacity:.55; }
+    .territory.enemy polygon { fill-opacity:.55; }
+    .territory.current polygon { fill-opacity:.86;stroke:#ffe3a1;stroke-width:3;filter:url(#markerGlow); }
+    .territory.locked polygon { fill-opacity:.25;stroke-opacity:.27; }
+    .territory[role="button"] { cursor:pointer; }
+    .territory[role="button"]:hover polygon,.territory[role="button"]:focus polygon { fill-opacity:1;stroke:#fff0bd;stroke-width:3; }
+    .territory-marker { fill:#142a30;stroke:#ead9ae;stroke-width:1.6; }
+    .territory.current .territory-marker { fill:#f0d18d;stroke:#fff1c5;stroke-width:2.2; }
+    .territory-number { fill:#fbf5e6;text-anchor:middle;font:800 10px Inter,system-ui,sans-serif;pointer-events:none; }
+    .territory.current .territory-number { fill:#25332c; }
+    .territory-name { fill:#27372f;text-anchor:middle;font:700 9px Georgia,serif;paint-order:stroke;stroke:#d4c79f;stroke-width:2.5px;stroke-linejoin:round;pointer-events:none; }
+    .territory.locked .territory-name { fill:#48564a;stroke:#b9b08e; }
+    .capital-mark { fill:none;stroke:#fff3d0;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:.95; }
+    .current-pulse { fill:none;stroke:#fff0bb;stroke-width:2;opacity:.8; }
+    .map-ornament circle { fill:rgba(18,42,49,.24);stroke:#e8dab4;stroke-width:1.5; }
+    .map-ornament path { fill:none;stroke:#e8dab4;stroke-width:1.5;stroke-linejoin:round; }
+    .map-ornament .compass-north { fill:#f0d18d;stroke:#f0d18d; }
+    .map-ornament text { fill:#f5e9c9;text-anchor:middle;font:800 12px Georgia,serif; }
+    .map-cartouche rect { fill:#1c3334;fill-opacity:.86;stroke:#d8c69a;stroke-opacity:.65; }
+    .map-cartouche text:first-of-type { fill:#f1dfb4;font:800 10px Georgia,serif;letter-spacing:2px; }
+    .map-cartouche text:last-of-type { fill:#bdc5ad;font:8px Inter,system-ui,sans-serif;letter-spacing:1.5px; }
+    .map-scale path { fill:none;stroke:#e8dab4;stroke-width:1.5; }
+    .map-scale text { fill:#d9ddc8;font:9px Georgia,serif; }
+    .map-note { margin-top:13px;font-size:10px; }
+    .mission-body { padding:20px 21px 21px; }
+    .mission-title-row h3 { font-size:24px;letter-spacing:-.02em; }
+    .nation-row,.unit-row,.strength-box,.battle-intel>div { background:linear-gradient(145deg,rgba(10,23,30,.38),rgba(24,42,50,.42));border-color:rgba(215,226,214,.13); }
+    .unit-row { padding:11px;border-radius:13px; }
+    .unit-icon { box-shadow:inset 0 0 0 1px rgba(255,255,255,.07); }
+    .primary-btn { box-shadow:0 8px 23px rgba(193,154,91,.19),inset 0 1px 0 rgba(255,255,255,.38); }
+    .ghost-btn,.small-btn { background:linear-gradient(145deg,rgba(43,67,78,.92),rgba(27,46,56,.92)); }
+    .ghost-btn:hover,.small-btn:hover,.deploy-btn:hover { background:linear-gradient(145deg,rgba(56,83,92,.96),rgba(31,53,62,.96)); }
+    .footer-note { margin-top:19px; }
+    @media (max-width:700px) {
+      .shell { width:min(100% - 20px,560px);padding-top:15px; }
+      #campaignMap.campaign-map { overflow-x:auto;overscroll-behavior-x:contain; }
+      #campaignMap .atlas-svg { width:760px;max-width:none; }
+    }
+
   </style>
 </head>
 <body>
@@ -283,20 +376,21 @@
           <div>
             <div class="eyebrow">The theatre of war</div>
             <h2>Campaign map</h2>
-            <p>Secure each frontier to open the road to the Crownlands.</p>
+            <p>A living atlas of the Crownlands. Every shape is a province whose control can change.</p>
           </div>
           <div class="terrain-tag">40 regions</div>
         </div>
         <div class="map-wrap">
           <div class="map-key">
-            <span class="key-item"><i class="key-dot"></i> Secured by you</span>
-            <span class="key-item"><i class="key-dot enemy"></i> Claimed by a rival</span>
-            <span class="key-item"><i class="key-dot locked"></i> Not yet reachable</span>
+            <span class="key-item"><i class="key-dot"></i> Your territory</span>
+            <span class="key-item"><i class="key-dot enemy"></i> Rival territory</span>
+            <span class="key-item"><i class="key-dot contested"></i> Contested frontier</span>
+            <span class="key-item"><i class="key-dot locked"></i> Unreached</span>
           </div>
           <div class="campaign-map" id="campaignMap" aria-label="Campaign territories"></div>
           <div class="map-note">
-            <span><strong>Frontier rule:</strong> Win a stage to claim its region and unlock the next one.</span>
-            <span>Lose, and the rival claims the region and can force your front line back one territory.</span>
+            <span><strong>Campaign route:</strong> The golden road links the 40 provinces toward Crownfall.</span>
+            <span>Territory colours show who currently controls each province.</span>
           </div>
         </div>
       </section>
@@ -579,30 +673,102 @@
 
     function renderMap() {
       const map = $('campaignMap');
-      map.innerHTML = '';
-      stages.forEach((stage, index) => {
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const rows = [
+        [2,3,4,5,6],
+        [1,2,3,4,5,6,7],
+        [0,1,2,3,4,5,6,7],
+        [0,1,2,3,4,5,6,7],
+        [1,2,3,4,5,6,7],
+        [2,3,4,5,6]
+      ];
+      const centers = [];
+      rows.forEach((columns, rowIndex) => {
+        const orderedColumns = rowIndex % 2 ? [...columns].reverse() : columns;
+        orderedColumns.forEach(column => {
+          centers.push({ x:160 + column * 110 + (rowIndex % 2 ? 55 : 0), y:110 + rowIndex * 95 });
+        });
+      });
+      const hexPoints = ({x,y}) => Array.from({length:6}, (_,i) => {
+        const angle = (-90 + i * 60) * Math.PI / 180;
+        return `${(x + Math.cos(angle)*62).toFixed(1)},${(y + Math.sin(angle)*62).toFixed(1)}`;
+      }).join(' ');
+      const ownerInfo = index => {
+        const owner = state.owners[index];
+        if (state.completed.includes(index) || owner === 'player') return { fill:'#548a70', label:'Your territory', status:'secured' };
+        if (owner && owner !== 'contested' && nations[owner]) return { fill:nations[owner].color, label:nations[owner].name, status:'enemy' };
+        if (index === currentStageIndex() && !state.campaignWon) return { fill:'#c7a15c', label:'Contested frontier', status:'current' };
+        return { fill:'#71877b', label:'Unreached', status:'locked' };
+      };
+      const routePath = centers.map((point,i) => `${i ? 'L' : 'M'} ${point.x} ${point.y}`).join(' ');
+      const regionMarkup = stages.map((stage,index) => {
+        const point = centers[index];
+        const owner = ownerInfo(index);
         const completed = state.completed.includes(index);
         const isCurrent = index === currentStageIndex() && !state.campaignWon;
         const locked = index > currentStageIndex() || (index === currentStageIndex() && state.campaignWon);
-        const owner = state.owners[index];
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'map-stage';
-        if (completed) button.classList.add('secured');
-        else if (isCurrent && owner !== 'contested') button.classList.add('claimed');
-        if (isCurrent) button.classList.add('current');
-        if (locked) button.disabled = true;
-        if (completed) button.disabled = true;
-        const status = completed ? 'Secured' : locked ? 'Locked' : owner === 'contested' ? 'Contested' : `Claimed: ${nations[owner]?.name || 'Rival'}`;
-        const ownerColor = completed ? '#83bd8c' : owner === 'contested' ? '#e2bd75' : (nations[owner]?.color || '#d8876d');
-        button.style.setProperty('--territory-color', ownerColor);
-        button.innerHTML = `
-          <span class="stage-number">Region ${String(index + 1).padStart(2,'0')}</span>
-          <span class="stage-name">${stage.name}</span>
-          <span class="stage-status"><i class="status-dot"></i>${status}</span>
-        `;
-        if (isCurrent && !locked) button.addEventListener('click', () => renderAll());
-        map.appendChild(button);
+        const label = owner.label;
+        const number = String(index + 1).padStart(2,'0');
+        const title = `Region ${index + 1}: ${stage.name} — ${label}`;
+        const canSelect = isCurrent && !locked && !completed;
+        const major = (index + 1) % 5 === 0;
+        return `
+          <g class="territory ${owner.status}${isCurrent ? ' current' : ''}${completed ? ' completed' : ''}"
+             data-stage="${index}" role="${canSelect ? 'button' : 'img'}"
+             ${canSelect ? 'tabindex="0" aria-pressed="true"' : 'aria-disabled="true"'}
+             aria-label="${title}" style="--territory:${owner.fill}">
+            <title>${title}</title>
+            <polygon class="territory-shape" points="${hexPoints(point)}" />
+            ${major ? `<path class="capital-mark" d="M ${point.x-8} ${point.y-18} l 8 -8 8 8 v 9 h -16 z M ${point.x-3} ${point.y-10} v 6 M ${point.x+3} ${point.y-10} v 6" />` : ''}
+            <circle class="territory-marker" cx="${point.x}" cy="${point.y+1}" r="15" />
+            <text class="territory-number" x="${point.x}" y="${point.y+5}">${number}</text>
+            <text class="territory-name" x="${point.x}" y="${point.y+39}">${stage.name}</text>
+            ${isCurrent ? `<circle class="current-pulse" cx="${point.x}" cy="${point.y+1}" r="22" />` : ''}
+          </g>`;
+      }).join('');
+
+      map.innerHTML = `
+        <svg class="atlas-svg" viewBox="0 0 1100 700" role="img" aria-label="Illustrated map of the forty Crownlands provinces">
+          <defs>
+            <linearGradient id="seaGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#183743"/><stop offset=".55" stop-color="#244958"/><stop offset="1" stop-color="#132d3a"/></linearGradient>
+            <linearGradient id="landGradient" x1="0" y1="0" x2=".9" y2="1"><stop offset="0" stop-color="#d5c79e"/><stop offset=".48" stop-color="#bbaa7f"/><stop offset="1" stop-color="#8c9a70"/></linearGradient>
+            <pattern id="seaGrain" width="34" height="34" patternUnits="userSpaceOnUse"><path d="M 2 12 q 7 -4 14 0 t 14 0 M -8 28 q 7 -4 14 0 t 14 0" fill="none" stroke="#b9d0ca" stroke-opacity=".09" stroke-width="1"/></pattern>
+            <clipPath id="continentClip"><path d="M 190 34 C 275 4 365 27 435 20 C 555 2 650 36 729 27 C 835 18 920 57 985 112 C 1042 160 1036 225 1063 275 C 1087 326 1048 388 1036 434 C 1012 506 941 542 889 584 C 808 650 718 644 635 666 C 530 686 437 657 353 641 C 255 622 183 583 125 516 C 69 452 65 383 48 319 C 31 239 71 173 104 117 C 128 76 150 52 190 34 Z"/></clipPath>
+            <filter id="landShadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#06151b" flood-opacity=".5"/></filter>
+            <filter id="markerGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <rect width="1100" height="700" fill="url(#seaGradient)"/>
+          <rect width="1100" height="700" fill="url(#seaGrain)"/>
+          <g class="sea-labels"><text x="45" y="95">THE WESTERN SEA</text><text x="850" y="660">THE CROWN SEA</text><text x="890" y="82">NORTHWIND OCEAN</text></g>
+          <path class="land-shadow" d="M 190 34 C 275 4 365 27 435 20 C 555 2 650 36 729 27 C 835 18 920 57 985 112 C 1042 160 1036 225 1063 275 C 1087 326 1048 388 1036 434 C 1012 506 941 542 889 584 C 808 650 718 644 635 666 C 530 686 437 657 353 641 C 255 622 183 583 125 516 C 69 452 65 383 48 319 C 31 239 71 173 104 117 C 128 76 150 52 190 34 Z" fill="url(#landGradient)" stroke="#e5d8b4" stroke-width="7" filter="url(#landShadow)"/>
+          <g clip-path="url(#continentClip)">
+            <path class="terrain-contour" d="M 90 205 C 210 135 290 160 385 102 S 580 98 670 142 S 850 155 1010 105 M 60 255 C 185 180 300 217 402 160 S 600 152 705 196 S 900 214 1060 160 M 40 470 C 170 405 280 450 390 390 S 600 380 710 425 S 900 450 1080 390 M 85 540 C 225 485 315 525 435 475 S 635 470 735 515 S 925 525 1050 480"/>
+            <path class="river" d="M 930 60 C 870 155 890 210 810 265 S 720 355 760 420 S 715 520 620 610"/>
+            <g class="mountains" transform="translate(350 85)"><path d="M0 45 L33 0 L68 45 Z M45 45 L83 10 L118 45 Z M95 45 L125 18 L153 45 Z"/><path d="M25 13 L33 0 L43 14 L35 10 Z M75 19 L83 10 L92 20 L84 17 Z M118 25 L125 18 L133 26 L125 23 Z"/></g>
+            <g class="mountains" transform="translate(760 455) scale(.8)"><path d="M0 45 L33 0 L68 45 Z M45 45 L83 10 L118 45 Z M95 45 L125 18 L153 45 Z"/><path d="M25 13 L33 0 L43 14 L35 10 Z M75 19 L83 10 L92 20 L84 17 Z"/></g>
+            <g class="forest" transform="translate(170 390)"><path d="M0 34 L12 7 L24 34 Z M18 43 L32 10 L46 43 Z M40 34 L53 5 L66 34 Z M62 43 L76 11 L90 43 Z"/><path d="M10 34 V43 M30 43 V51 M51 34 V43 M74 43 V51"/></g>
+            <g class="forest" transform="translate(845 205)"><path d="M0 34 L12 7 L24 34 Z M18 43 L32 10 L46 43 Z M40 34 L53 5 L66 34 Z M62 43 L76 11 L90 43 Z"/><path d="M10 34 V43 M30 43 V51 M51 34 V43 M74 43 V51"/></g>
+          </g>
+          <path class="campaign-road-under" d="${routePath}"/>
+          <path class="campaign-road" d="${routePath}"/>
+          <g class="territories">${regionMarkup}</g>
+          <g class="map-ornament" transform="translate(1000 115)"><circle r="43"/><circle r="34"/><path d="M0 -32 L9 0 L0 32 L-9 0 Z M-32 0 L0 -9 L32 0 L0 9 Z"/><path class="compass-north" d="M0 -38 L-7 -5 L0 0 L7 -5 Z"/><text x="0" y="-51">N</text></g>
+          <g class="map-cartouche" transform="translate(46 625)"><rect width="242" height="39" rx="9"/><text x="14" y="16">THE CROWNLANDS</text><text x="14" y="29">ROYAL SURVEY · YEAR 742</text></g>
+          <g class="map-scale" transform="translate(925 626)"><path d="M0 0 H112 M0 -5 V5 M56 -5 V5 M112 -5 V5"/><text x="0" y="19">0</text><text x="56" y="19" text-anchor="middle">100</text><text x="112" y="19" text-anchor="end">200 leagues</text></g>
+        </svg>`;
+
+      map.querySelectorAll('.territory.current[role="button"]').forEach(region => {
+        const selectCurrent = () => {
+          const index = Number(region.dataset.stage);
+          if (index === currentStageIndex()) {
+            $('missionName').textContent = currentStage().name;
+            showToast(`${currentStage().name} · Current campaign objective`);
+          }
+        };
+        region.addEventListener('click', selectCurrent);
+        region.addEventListener('keydown', event => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectCurrent(); }
+        });
       });
     }
 
